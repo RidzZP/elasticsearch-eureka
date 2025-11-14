@@ -1,0 +1,30 @@
+{
+    "name": "elasticsearch-eureka",
+    "version": "1.0.0",
+    "description": "A scalable **Elasticsearch** service with **Logstash** data pipeline, designed for autocomplete functionality. This project serves as a service layer containing multiple indices that can retrieve data from different databases hosted on various VM IPs.",
+    "main": "index.js",
+    "scripts": {
+        "start": "node src/index.js",
+        "dev": "nodemon src/index.js",
+        "setup:indices": "node scripts/setup-indices.js",
+        "seed:products": "node scripts/seed-products.js",
+        "sync:eurekabookhouse": "node scripts/sync-eurekabookhouse.js",
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "type": "commonjs",
+    "dependencies": {
+        "@elastic/elasticsearch": "^8.11.0",
+        "cors": "^2.8.5",
+        "dotenv": "^17.2.3",
+        "express": "^5.1.0",
+        "mysql2": "^3.15.3",
+        "swagger-jsdoc": "^6.2.8",
+        "swagger-ui-express": "^5.0.1"
+    },
+    "devDependencies": {
+        "nodemon": "^3.1.11"
+    }
+}

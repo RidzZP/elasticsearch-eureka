@@ -1,0 +1,10 @@
+FROM docker.elastic.co/logstash/logstash:8.15.0
+
+# Copy pipeline config
+COPY ./logstash/pipeline /usr/share/logstash/pipeline
+
+# Copy logstash.yml (optional but recommended)
+COPY ./logstash/config/logstash.yml /usr/share/logstash/config/logstash.yml
+
+# Copy JDBC connector
+COPY ./logstash/config/mysql-connector-java.jar /usr/share/logstash/logstash-core/lib/jars/mysql-connector-java.jar

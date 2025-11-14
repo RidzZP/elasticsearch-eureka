@@ -1,0 +1,323 @@
+{
+    "info": {
+        "name": "Elasticsearch Autocomplete Service",
+        "description": "Complete API collection for Elasticsearch Autocomplete Service with Logstash",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+        "_exporter_id": "12345"
+    },
+    "item": [
+        {
+            "name": "Health Check",
+            "item": [
+                {
+                    "name": "Check API Health",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/search/health",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "v1", "search", "health"]
+                        },
+                        "description": "Check the health status of the API and Elasticsearch connection"
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Products",
+            "item": [
+                {
+                    "name": "Autocomplete Products",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/search/products/autocomplete?q=apple&size=10",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "v1", "search", "products", "autocomplete"],
+                            "query": [
+                                {
+                                    "key": "q",
+                                    "value": "apple",
+                                    "description": "Search query string"
+                                },
+                                {
+                                    "key": "size",
+                                    "value": "10",
+                                    "description": "Number of results to return"
+                                }
+                            ]
+                        },
+                        "description": "Search products with autocomplete functionality using edge_ngram tokenizer"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Suggest Products",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/search/products/suggest?q=app&size=5",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "v1", "search", "products", "suggest"],
+                            "query": [
+                                {
+                                    "key": "q",
+                                    "value": "app",
+                                    "description": "Search query prefix"
+                                },
+                                {
+                                    "key": "size",
+                                    "value": "5",
+                                    "description": "Number of suggestions"
+                                }
+                            ]
+                        },
+                        "description": "Fast product suggestions using Elasticsearch completion suggester"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Advanced Search - Basic",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"query\": \"apple\",\n  \"size\": 10,\n  \"from\": 0\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/search/products/advanced",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "v1", "search", "products", "advanced"]
+                        },
+                        "description": "Basic advanced search for products"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Advanced Search - With Filters",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"query\": \"smartphone\",\n  \"filters\": {\n    \"category\": \"electronics\",\n    \"price\": {\n      \"gte\": 100,\n      \"lte\": 1000\n    }\n  },\n  \"size\": 10,\n  \"from\": 0,\n  \"sort\": [\n    {\n      \"price\": \"asc\"\n    }\n  ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/search/products/advanced",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "v1", "search", "products", "advanced"]
+                        },
+                        "description": "Advanced search with category filter and price range"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Advanced Search - Multiple Categories",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"query\": \"apple\",\n  \"filters\": {\n    \"category\": [\"electronics\", \"audio\"]\n  },\n  \"size\": 20,\n  \"from\": 0,\n  \"sort\": [\n    {\n      \"_score\": \"desc\"\n    },\n    {\n      \"price\": \"asc\"\n    }\n  ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/search/products/advanced",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "v1", "search", "products", "advanced"]
+                        },
+                        "description": "Search products in multiple categories with sorting"
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Users",
+            "item": [
+                {
+                    "name": "Autocomplete Users",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/search/users/autocomplete?q=john&size=10",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "v1", "search", "users", "autocomplete"],
+                            "query": [
+                                {
+                                    "key": "q",
+                                    "value": "john",
+                                    "description": "Search query string"
+                                },
+                                {
+                                    "key": "size",
+                                    "value": "10",
+                                    "description": "Number of results to return"
+                                }
+                            ]
+                        },
+                        "description": "Search users with multi-field autocomplete (username, full name, email)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Advanced Search Users - Basic",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"query\": \"john doe\",\n  \"size\": 10,\n  \"from\": 0\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/search/users/advanced",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "v1", "search", "users", "advanced"]
+                        },
+                        "description": "Basic advanced search for users"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Advanced Search Users - With Sorting",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"query\": \"john\",\n  \"filters\": {},\n  \"size\": 20,\n  \"from\": 0,\n  \"sort\": [\n    {\n      \"username\": \"asc\"\n    }\n  ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/search/users/advanced",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "v1", "search", "users", "advanced"]
+                        },
+                        "description": "Advanced user search with sorting by username"
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Elasticsearch Direct",
+            "item": [
+                {
+                    "name": "Check Elasticsearch Health",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://localhost:9400/_cluster/health",
+                            "protocol": "http",
+                            "host": ["localhost"],
+                            "port": "9400",
+                            "path": ["_cluster", "health"]
+                        },
+                        "description": "Check Elasticsearch cluster health directly"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "List All Indices",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://localhost:9400/_cat/indices?v",
+                            "protocol": "http",
+                            "host": ["localhost"],
+                            "port": "9400",
+                            "path": ["_cat", "indices"],
+                            "query": [
+                                {
+                                    "key": "v",
+                                    "value": null
+                                }
+                            ]
+                        },
+                        "description": "List all Elasticsearch indices"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Products Index Mapping",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://localhost:9400/products/_mapping",
+                            "protocol": "http",
+                            "host": ["localhost"],
+                            "port": "9400",
+                            "path": ["products", "_mapping"]
+                        },
+                        "description": "Get mapping for products index"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Search Products Directly",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"query\": {\n    \"match\": {\n      \"name\": \"apple\"\n    }\n  }\n}"
+                        },
+                        "url": {
+                            "raw": "http://localhost:9400/products/_search",
+                            "protocol": "http",
+                            "host": ["localhost"],
+                            "port": "9400",
+                            "path": ["products", "_search"]
+                        },
+                        "description": "Direct Elasticsearch search on products index"
+                    },
+                    "response": []
+                }
+            ]
+        }
+    ],
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:3002",
+            "type": "string"
+        }
+    ]
+}
