@@ -1,102 +1,84 @@
 version: "3.8"
 
 services:
-    # Node.js Application Service
-    app:
-        build:
-            context: .
-            dockerfile: Dockerfile
-        container_name: elasticsearch-service-app
-        ports:
-            - "3002:3002"
-        environment:
-            - NODE_ENV=development
-            - PORT=3002
-            - ELASTICSEARCH_HOST=elasticsearch
-            - ELASTICSEARCH_PORT=9200
-            - ELASTICSEARCH_PROTOCOL=http
-            - API_PREFIX=/api/v1
-            - DB_HOST=34.101.254.58
-            - DB_NAME=tb_2019
-            - DB_USER=root
-            - DB_PASS=SipLah@2024
-            - DB_DIALECT=mysql
-        volumes:
-            - .:/usr/src/app
-            - /usr/src/app/node_modules
-        depends_on:
-            elasticsearch:
-                condition: service_healthy
-            logstash:
-                condition: service_started
-        networks:
-            - elastic-network
-        restart: unless-stopped
+  app:
+    image: elastic-eureka
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: elastic-eureka
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=development
+      - PORT=3002
+      - ELASTICSEARCH_HOST=elasticsearch
+      - ELASTICSEARCH_PORT=9200
+      - ELASTICSEARCH_PROTOCOL=http
+      - API_PREFIX=/api/v1
+      - DB_HOST=34.50.96.60
+      - DB_NAME=tb_2019
+      - DB_USER=root
+      - DB_PASS=SipLah@2024
+      - DB_DIALECT=mysql
+    volumes:
+      # PENTING: agar hasil generate model muncul di lokal
+      - .:/usr/src/app
+    depends_on:
+      - elasticsearch
+    networks:
+      - elastic-network
+    restart: unless-stopped
 
-    # Elasticsearch Service
-    elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:8.11.3
-        container_name: elasticsearch
-        environment:
-            - discovery.type=single-node
-            - xpack.security.enabled=false
-            - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-            - bootstrap.memory_lock=true
-        ulimits:
-            memlock:
-                soft: -1
-                hard: -1
-        volumes:
-            - elasticsearch-data:/usr/share/elasticsearch/data
-        ports:
-            - "9400:9200"
-            - "9500:9300"
-        healthcheck:
-            test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
-            interval: 30s
-            timeout: 10s
-            retries: 5
-        networks:
-            - elastic-network
-        restart: unless-stopped
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.3
+    container_name: elasticsearch
+    environment:
+        - discovery.type=single-node
+        - xpack.security.enabled=false
+        - "ES_JAVA_OPTS=-Xms256m -Xmx256m"
+    ports:
+        - "9400:9200"
+    networks:
+        - elastic-network
+    restart: unless-stopped
 
-    # Kibana Service
-    kibana:
-        image: docker.elastic.co/kibana/kibana:8.11.3
-        container_name: kibana
-        environment:
-            - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-            - xpack.security.enabled=false
-        ports:
-            - "5601:5601"
-        depends_on:
-            elasticsearch:
-                condition: service_healthy
-        networks:
-            - elastic-network
-        restart: unless-stopped
 
-    # Logstash Service
-    logstash:
-        image: docker.elastic.co/logstash/logstash:8.11.3
-        container_name: logstash
-        network_mode: "host"
-        volumes:
-            - ./logstash/drivers:/usr/share/logstash/drivers
-            - ./logstash/pipeline:/usr/share/logstash/pipeline
-        environment:
-            - "LS_JAVA_OPTS=-Xmx256m -Xms256m"
-            - ELASTICSEARCH_HOST=http://localhost:9200
-            - DB_HOST=34.101.254.58
-            - DB_NAME=tb_2019
-            - DB_USER=root
-            - DB_PASS=SipLah@2024
-        restart: unless-stopped
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.3
+    container_name: kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - xpack.security.enabled=false
+    ports:
+      - "5601:5601"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - elastic-network
+    restart: unless-stopped
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.11.3
+    container_name: logstash
+    network_mode: "host"
+    volumes:
+      - ./logstash/drivers:/usr/share/logstash/drivers
+      - ./logstash/pipeline:/usr/share/logstash/pipeline
+    environment:
+      - "LS_JAVA_OPTS=-Xmx256m -Xms256m"
+      - ELASTICSEARCH_HOST=http://35.219.6.224:9400
+      - DB_HOST=34.50.96.60
+      - DB_NAME=tb_2019
+      - DB_USER=root
+      - DB_PASS=SipLah@2024
+    restart: unless-stopped
 
 networks:
-    elastic-network:
-        driver: bridge
+  elastic-network:
+    driver: bridge
 
 volumes:
-    elasticsearch-data:
-        driver: local
+  elasticsearch-data:
+    driver: local

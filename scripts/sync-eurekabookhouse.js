@@ -2,7 +2,7 @@ const mysql = require("mysql2/promise");
 const { Client } = require("@elastic/elasticsearch");
 
 const DB_CONFIG = {
-    host: process.env.DB_HOST || "34.101.254.58",
+    host: process.env.DB_HOST || "34.50.96.60",
     port: 3306,
     user: process.env.DB_USER || "root",
     password: process.env.DB_PASS || "SipLah@2024",
@@ -11,7 +11,9 @@ const DB_CONFIG = {
 };
 
 const esClient = new Client({
-    node: "http://localhost:9400",
+    node: `${process.env.ELASTICSEARCH_PROTOCOL || "http"}://${
+        process.env.ELASTICSEARCH_HOST || "localhost"
+    }:${process.env.ELASTICSEARCH_PORT || 9200}`,
     requestTimeout: 60000,
 });
 

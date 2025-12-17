@@ -161,7 +161,7 @@ router.get("/indices/:index/data", searchController.getIndexData.bind(searchCont
  *   get:
  *     summary: Autocomplete search for products
  *     description: Search products with autocomplete functionality using edge_ngram tokenizer
- *     tags: [Products]
+ *     tags: [Products - Testing]
  *     parameters:
  *       - in: query
  *         name: q
@@ -215,7 +215,7 @@ router.get(
  *   get:
  *     summary: Suggest products using completion suggester
  *     description: Fast product suggestions using Elasticsearch completion suggester
- *     tags: [Products]
+ *     tags: [Products - Testing]
  *     parameters:
  *       - in: query
  *         name: q
@@ -272,7 +272,7 @@ router.get("/products/suggest", searchController.suggestProducts.bind(searchCont
  *   post:
  *     summary: Advanced product search with filters
  *     description: Search products with advanced filters, sorting, and pagination
- *     tags: [Products]
+ *     tags: [Products - Testing]
  *     requestBody:
  *       required: true
  *       content:

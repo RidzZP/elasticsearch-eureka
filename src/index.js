@@ -86,10 +86,10 @@ async function startServer() {
 ╔═══════════════════════════════════════════════════════════╗
 ║  🚀 Elasticsearch Autocomplete Service                    ║
 ║                                                           ║
-║  Server running on: http://localhost:${PORT}                ║
+║  Server running on: http://35.219.6.224:${PORT}                ║
 ║  Environment: ${process.env.NODE_ENV || "development"}                              ║
 ║  Elasticsearch: ${config.elasticsearch.node}  ║
-║  API Docs: http://localhost:${PORT}/api-docs               ║
+║  API Docs: http://35.219.6.224:${PORT}/api-docs               ║
 ╚═══════════════════════════════════════════════════════════╝
       `);
         });
