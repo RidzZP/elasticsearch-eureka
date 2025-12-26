@@ -7,8 +7,8 @@
         "start": "node src/index.js",
         "dev": "nodemon src/index.js",
         "setup:indices": "node scripts/setup-indices.js",
-        "seed:products": "node scripts/seed-products.js",
         "sync:eurekabookhouse": "node scripts/sync-eurekabookhouse.js",
+        "sync:siplah": "node scripts/sync-siplah.js",
         "generate:models": "node scripts/generate-models.js",
         "generate:models:siplah": "node scripts/generate-models-siplah.js",
         "test": "echo \"Error: no test specified\" && exit 1"

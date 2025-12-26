@@ -24,6 +24,3 @@ Thumbs.db
 *.swp
 *.swo
 *~
-
-# MySQL connector (download separately)
-logstash/config/mysql-connector-java.jar

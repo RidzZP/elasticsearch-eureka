@@ -1,0 +1,249 @@
+{
+    "index_patterns": ["siplah"],
+    "settings": {
+        "number_of_shards": 1,
+        "number_of_replicas": 1,
+        "analysis": {
+            "analyzer": {
+                "autocomplete": {
+                    "tokenizer": "autocomplete_tokenizer",
+                    "filter": ["lowercase"]
+                },
+                "autocomplete_search": {
+                    "tokenizer": "lowercase"
+                }
+            },
+            "tokenizer": {
+                "autocomplete_tokenizer": {
+                    "type": "edge_ngram",
+                    "min_gram": 2,
+                    "max_gram": 20,
+                    "token_chars": ["letter", "digit"]
+                }
+            }
+        }
+    },
+    "mappings": {
+        "properties": {
+            "product_id": {
+                "type": "keyword"
+            },
+            "mall_id": {
+                "type": "keyword"
+            },
+            "model": {
+                "type": "text",
+                "fields": {
+                    "keyword": {
+                        "type": "keyword",
+                        "ignore_above": 256
+                    }
+                }
+            },
+            "sku": {
+                "type": "keyword"
+            },
+            "isbn": {
+                "type": "keyword"
+            },
+            "location": {
+                "type": "text"
+            },
+            "quantity": {
+                "type": "integer"
+            },
+            "image": {
+                "type": "text"
+            },
+            "manufacturer_id": {
+                "type": "keyword"
+            },
+            "shipping": {
+                "type": "boolean"
+            },
+            "price": {
+                "type": "float"
+            },
+            "weight": {
+                "type": "float"
+            },
+            "length": {
+                "type": "float"
+            },
+            "width": {
+                "type": "float"
+            },
+            "height": {
+                "type": "float"
+            },
+            "subtract": {
+                "type": "boolean"
+            },
+            "minimum": {
+                "type": "integer"
+            },
+            "status": {
+                "type": "keyword"
+            },
+            "date_added": {
+                "type": "date"
+            },
+            "date_modified": {
+                "type": "date"
+            },
+            "viewed": {
+                "type": "integer"
+            },
+            "name": {
+                "type": "text",
+                "analyzer": "autocomplete",
+                "search_analyzer": "autocomplete_search",
+                "fields": {
+                    "keyword": {
+                        "type": "keyword",
+                        "ignore_above": 256
+                    }
+                }
+            },
+            "description": {
+                "type": "text"
+            },
+            "manufacturer": {
+                "type": "object",
+                "properties": {
+                    "manufacturer_id": {
+                        "type": "keyword"
+                    },
+                    "name": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": {
+                                "type": "keyword",
+                                "ignore_above": 256
+                            }
+                        }
+                    },
+                    "slug": {
+                        "type": "keyword"
+                    },
+                    "image": {
+                        "type": "text"
+                    },
+                    "status": {
+                        "type": "keyword"
+                    }
+                }
+            },
+            "mall": {
+                "type": "object",
+                "properties": {
+                    "mall_id": {
+                        "type": "keyword"
+                    },
+                    "mall_code": {
+                        "type": "keyword"
+                    },
+                    "name": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": {
+                                "type": "keyword",
+                                "ignore_above": 256
+                            }
+                        }
+                    },
+                    "slug": {
+                        "type": "keyword"
+                    },
+                    "image": {
+                        "type": "text"
+                    }
+                }
+            },
+            "category": {
+                "type": "object",
+                "properties": {
+                    "value": {
+                        "type": "keyword"
+                    },
+                    "parentId": {
+                        "type": "keyword"
+                    },
+                    "name": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": {
+                                "type": "keyword",
+                                "ignore_above": 256
+                            }
+                        }
+                    },
+                    "slug": {
+                        "type": "keyword"
+                    }
+                }
+            },
+            "categoryChildren": {
+                "type": "nested",
+                "properties": {
+                    "value": {
+                        "type": "keyword"
+                    },
+                    "parentId": {
+                        "type": "keyword"
+                    },
+                    "name": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": {
+                                "type": "keyword",
+                                "ignore_above": 256
+                            }
+                        }
+                    },
+                    "slug": {
+                        "type": "keyword"
+                    },
+                    "isSelected": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "grandCategoryChildren": {
+                "type": "nested",
+                "properties": {
+                    "value": {
+                        "type": "keyword"
+                    },
+                    "parentId": {
+                        "type": "keyword"
+                    },
+                    "name": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": {
+                                "type": "keyword",
+                                "ignore_above": 256
+                            }
+                        }
+                    },
+                    "slug": {
+                        "type": "keyword"
+                    },
+                    "isSelected": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "categoryLevel": {
+                "type": "integer"
+            },
+            "suggest": {
+                "type": "completion"
+            },
+            "@timestamp": {
+                "type": "date"
+            }
+        }
+    }
+}

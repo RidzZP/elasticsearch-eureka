@@ -24,8 +24,8 @@ const options = {
                 description: "Development server",
             },
             {
-                url: "http://35.219.6.224:3002/api/v1",
-                description: "API v1",
+                url: "http://localhost:3002",
+                description: "Local Gess",
             },
         ],
         tags: [

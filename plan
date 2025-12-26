@@ -1,0 +1,212 @@
+BUATKAN SETUP INDICES NYA DAN SCRIPT SYNC NYA TAMBAHKAN KE SWAGGER UNTUK SHOW DATA NYA DENGAN PAGINATION 
+
+BUATKAN NAMA INDEX NYA ADALAH siplah
+
+db_product
+-product_id
+-category_id
+-mall_id
+-model
+-sku
+-isbn
+-sk_kelulusan
+-penulis
+-id_author
+-author
+-location
+-quantity
+-storage_quantity
+-unit_type
+-image
+-manufacturer_id
+-shipping
+-price
+-dpp_price
+-dpp_nilai_lain
+-pph_price
+-dana_terima
+-priceSale
+-price_nego
+-price1 sampai 5
+-grosir_min1 sampai 4
+-grosir_price1 sampai 4
+-kondisi
+-kelas
+-semester
+-weight
+-length
+-width
+-height
+-processor
+-memory
+-harddisk
+-monitor
+-garansi
+-subtract
+-minimum
+-status
+-id_user_approve
+-blokir
+-disabled
+-hapus
+-date_added
+-date_modified
+-date_verified
+-date_deleted
+-viewed
+-layout
+-item_type
+-produksi
+-availability
+-ppn_type
+-ppnTagItem
+-ppnTagName
+-month_added
+
+relasikan ke db_manufacturer untuk dapatkan name
+db_manufacturer
+-manufacturer_id
+-name
+-slug
+-image
+-status
+
+relasikan ke db_product_description
+-product_id
+-name
+-description
+
+relasikan ke db_category_sandbox dan buatkan 3 level category
+-category_id
+-parent_id
+
+berikut contoh pembuatan level category nya
+Struktur Tabel Category
+Tabel yang digunakan: DbCategorySandbox
+
+Kolom Utama:
+category_id - ID kategori (Primary Key)
+parent_id - ID parent kategori (0 untuk root/level 0)
+name - Nama kategori
+slug - URL-friendly string
+status - Status aktif/tidak (1/0)
+Alur Category 3 Level di findOne()
+1. Penentuan Level Kategori
+2. Proses Identifikasi Level
+let categoryLevel = 0;
+let parentCategory = null;
+let grandParentCategory = null;
+
+if (currentCategory.parent_id !== 0) {
+    // Get parent category
+    parentCategory = await models.DbCategorySandbox.findOne({
+        where: { category_id: currentCategory.parent_id }
+    });
+
+    if (parentCategory) {
+        if (parentCategory.parent_id === 0) {
+            categoryLevel = 1; // Current adalah child
+        } else {
+            categoryLevel = 2; // Current adalah grandchild
+            
+            // Get grandparent category
+            grandParentCategory = await models.DbCategorySandbox.findOne({
+                where: { category_id: parentCategory.parent_id }
+            });
+        }
+    }
+}
+3. Struktur Data Response Berdasarkan Level
+Level 0 (Root Category)
+categoryInfo = {
+    category: {
+        value: currentCategory.category_id.toString(),
+        parentId: "0",
+        name: currentCategory.name,
+        slug: currentCategory.slug,
+    }
+};
+Level 1 (Child Category)
+categoryInfo = {
+    category: {
+        value: parentCategory.category_id.toString(),
+        parentId: "0",
+        name: parentCategory.name,
+        slug: parentCategory.slug,
+    },
+    categoryChildren: categoryChildren.map((child) => ({
+        value: child.value,
+        parentId: child.parentId,
+        name: child.name,
+        slug: child.slug,
+        isSelected: parseInt(child.value) === dataValues.category_id,
+    })),
+};
+Level 2 (Grandchild Category) - 3 Level Hierarchy
+categoryInfo = {
+    // Level 0 - Grandparent
+    category: {
+        value: grandParentCategory.category_id.toString(),
+        parentId: "0",
+        name: grandParentCategory.name,
+        slug: grandParentCategory.slug,
+    },
+    // Level 1 - Parent's siblings
+    categoryChildren: categoryChildren.map((child) => ({
+        value: child.value,
+        parentId: child.parentId,
+        name: child.name,
+        slug: child.slug,
+        isSelected: parseInt(child.value) === parentCategory.category_id,
+    })),
+    // Level 2 - Current level's siblings
+    grandCategoryChildren: grandCategoryChildren.map((grandChild) => ({
+        value: grandChild.value,
+        parentId: grandChild.parentId,
+        name: grandChild.name,
+        slug: grandChild.slug,
+        isSelected: parseInt(grandChild.value) === dataValues.category_id,
+    })),
+};
+Helper Method untuk Get Children
+async buildGrandCategoryChildren(categoryId) {
+    // Get semua child categories dengan parent_id = categoryId
+    const grandChildren = await models.DbCategorySandbox.findAll({
+        where: {
+            parent_id: categoryId,
+            status: 1, // Hanya kategori aktif
+        },
+        attributes: ["category_id", "parent_id", "name", "slug"],
+        order: [["name", "ASC"]],
+    });
+
+    return grandChildren.map((child) => ({
+        value: child.category_id.toString(),
+        parentId: child.parent_id.toString(),
+        name: child.name,
+        slug: child.slug,
+    }));
+}
+Contoh Hierarchy
+Level 0 (Root):     Elektronik (id: 1, parent_id: 0)
+                           |
+Level 1 (Child):    Komputer (id: 2, parent_id: 1)
+                           |
+Level 2 (Grandchild): Laptop (id: 3, parent_id: 2)
+
+Flow Diagram
+Product.category_id = 3 (Laptop)
+    ↓
+1. Get currentCategory (Laptop, parent_id=2)
+    ↓
+2. parent_id != 0, get parentCategory (Komputer, parent_id=1)
+    ↓
+3. parentCategory.parent_id != 0, set categoryLevel=2
+    ↓
+4. Get grandParentCategory (Elektronik, parent_id=0)
+    ↓
+5. Get categoryChildren (siblings of Komputer under Elektronik)
+    ↓
+6. Get grandCategoryChildren (siblings of Laptop under Komputer)
+    ↓
+7. Build response dengan 3 level hierarchy

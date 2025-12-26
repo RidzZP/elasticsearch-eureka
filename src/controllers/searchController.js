@@ -295,6 +295,82 @@ class SearchController {
             });
         }
     }
+
+    /**
+     * Search Siplah products with pagination
+     * GET /api/v1/search/siplah?q=query&page=1&size=10
+     */
+    async searchSiplah(req, res) {
+        try {
+            const { q, page = 1, size = 10 } = req.query;
+
+            const results = await searchService.searchWithPagination(
+                "siplah",
+                q,
+                parseInt(page),
+                parseInt(size)
+            );
+
+            return res.json(results);
+        } catch (error) {
+            console.error("Siplah search error:", error);
+            return res.status(500).json({
+                success: false,
+                message: "Internal server error",
+                error: error.message,
+            });
+        }
+    }
+
+    /**
+     * Get all Siplah products with pagination
+     * GET /api/v1/search/siplah/all?page=1&size=10
+     */
+    async getAllSiplah(req, res) {
+        try {
+            const { page = 1, size = 10 } = req.query;
+
+            const results = await searchService.getAllWithPagination(
+                "siplah",
+                parseInt(page),
+                parseInt(size)
+            );
+
+            return res.json(results);
+        } catch (error) {
+            console.error("Get all Siplah error:", error);
+            return res.status(500).json({
+                success: false,
+                message: "Internal server error",
+                error: error.message,
+            });
+        }
+    }
+
+    /**
+     * Get Siplah product by ID
+     * GET /api/v1/search/siplah/:id
+     */
+    async getSiplahById(req, res) {
+        try {
+            const { id } = req.params;
+
+            const result = await searchService.getById("siplah", id);
+
+            if (!result.success) {
+                return res.status(404).json(result);
+            }
+
+            return res.json(result);
+        } catch (error) {
+            console.error("Get Siplah by ID error:", error);
+            return res.status(500).json({
+                success: false,
+                message: "Internal server error",
+                error: error.message,
+            });
+        }
+    }
 }
 
 module.exports = new SearchController();
