@@ -111,6 +111,14 @@ async function buildCategoryHierarchy(categoryId, connection) {
             };
         } else if (categoryLevel === 2) {
             // Level 2 (Grandchild Category) - 3 Level Hierarchy
+            // Check if grandParentCategory exists
+            if (!grandParentCategory) {
+                console.warn(
+                    `Grandparent category not found for category ID: ${categoryId}`
+                );
+                return null;
+            }
+
             // Get siblings of parent (children of grandparent)
             const [parentSiblings] = await connection.execute(
                 "SELECT category_id, parent_id, name, slug FROM db_category_sandbox WHERE parent_id = ? AND status = 1 ORDER BY name ASC",
