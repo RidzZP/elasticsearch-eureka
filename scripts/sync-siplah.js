@@ -3,12 +3,12 @@ const { Client } = require("@elastic/elasticsearch");
 const models = require("../src/models");
 
 const DB_CONFIG = {
-    host: process.env.DB_HOST || "35.219.24.215",
+    host: process.env.DB_HOST,
     port: 3306,
-    user: process.env.DB_USER || "Siplah2025",
-    password: process.env.DB_PASS || "@SipLah2025!",
-    database: process.env.DB_NAME || "lkpp_siplah2019",
-    connectTimeout: 30000,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASS,
+    database: process.env.DB_NAME,
+    connectTimeout: 60000,
 };
 
 const esClient = new Client({
