@@ -5,7 +5,7 @@
     "main": "index.js",
     "scripts": {
         "start": "node src/index.js",
-        "dev": "nodemon src/index.js",
+        "dev": "nodemon",
         "setup:indices": "node scripts/setup-indices.js",
         "sync:eurekabookhouse": "node scripts/sync-eurekabookhouse.js",
         "sync:siplah": "node scripts/sync-siplah.js",

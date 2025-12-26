@@ -73,6 +73,7 @@ app.use((err, req, res, next) => {
 
 // Start server
 const PORT = config.server.port;
+const HOST = config.server.host;
 
 async function startServer() {
     try {
@@ -86,10 +87,10 @@ async function startServer() {
 ╔═══════════════════════════════════════════════════════════╗
 ║  🚀 Elasticsearch Autocomplete Service                    ║
 ║                                                           ║
-║  Server running on: http://35.219.6.224:${PORT}                ║
-║  Environment: ${process.env.NODE_ENV || "development"}                              ║
-║  Elasticsearch: ${config.elasticsearch.node}  ║
-║  API Docs: http://35.219.6.224:${PORT}/api-docs               ║
+║  Server running on: http://${HOST}:${PORT}                ║
+║  Environment: ${process.env.NODE_ENV || "development"}    ║
+║  Elasticsearch: ${config.elasticsearch.node}              ║
+║  API Docs: http://${HOST}:${PORT}/api-docs                ║
 ╚═══════════════════════════════════════════════════════════╝
       `);
         });

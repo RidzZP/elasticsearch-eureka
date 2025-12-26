@@ -9,6 +9,7 @@ module.exports = {
     },
     server: {
         port: process.env.PORT || 3000,
+        host: process.env.HOST || "localhost",
         apiPrefix: process.env.API_PREFIX || "/api/v1",
     },
     indices: {

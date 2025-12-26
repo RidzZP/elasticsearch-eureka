@@ -111,12 +111,33 @@ async function buildCategoryHierarchy(categoryId, connection) {
             };
         } else if (categoryLevel === 2) {
             // Level 2 (Grandchild Category) - 3 Level Hierarchy
-            // Check if grandParentCategory exists
+            // If grandParentCategory not found, gracefully fallback to level 1 (similar to required: false)
             if (!grandParentCategory) {
-                console.warn(
-                    `Grandparent category not found for category ID: ${categoryId}`
+                // Fallback: treat as level 1 (child of root) if grandparent missing
+                const [children] = await connection.execute(
+                    "SELECT category_id, parent_id, name, slug FROM db_category_sandbox WHERE parent_id = ? AND status = 1 ORDER BY name ASC",
+                    [currentCategory.parent_id]
                 );
-                return null;
+
+                categoryChildren = children.map((child) => ({
+                    value: child.category_id.toString(),
+                    parentId: child.parent_id.toString(),
+                    name: child.name,
+                    slug: child.slug,
+                    isSelected: parseInt(child.category_id) === parseInt(categoryId),
+                }));
+
+                return {
+                    category: {
+                        value: parentCategory.category_id.toString(),
+                        parentId: parentCategory.parent_id.toString(),
+                        name: parentCategory.name,
+                        slug: parentCategory.slug,
+                    },
+                    categoryChildren: categoryChildren,
+                    grandCategoryChildren: [],
+                    categoryLevel: 1,
+                };
             }
 
             // Get siblings of parent (children of grandparent)
@@ -186,7 +207,7 @@ async function syncSiplahData() {
         const [products] = await connection.execute(`
             SELECT 
                 p.product_id, p.model, p.sku, p.isbn, p.location,
-                p.quantity, p.image, p.manufacturer_id,
+                p.quantity, p.image, p.manufacturer_id, p.category_id,
                 p.shipping, p.price,
                 p.weight, p.length, p.width, p.height,
                 p.subtract, p.minimum, p.status, 
@@ -195,11 +216,14 @@ async function syncSiplahData() {
                 mfg.manufacturer_id as mfg_id, mfg.name as mfg_name, 
                 mfg.slug as mfg_slug, mfg.image as mfg_image, mfg.status as mfg_status,
                 m.mall_id as mall_id_ref, m.mall_code, m.name as mall_name, 
-                m.slug as mall_slug, m.image as mall_image
+                m.slug as mall_slug, m.image as mall_image,
+                cat.category_id as cat_id, cat.name as cat_name, 
+                cat.parent_id as cat_parent_id
             FROM db_product p
             INNER JOIN db_product_description pd ON p.product_id = pd.product_id
             LEFT JOIN db_manufacturer mfg ON p.manufacturer_id = mfg.manufacturer_id
             LEFT JOIN db_mall m ON p.mall_id = m.mall_id
+            LEFT JOIN db_category_sandbox cat ON p.category_id = cat.category_id AND cat.status = 1
             WHERE p.status = 1
         `);
 
@@ -235,18 +259,41 @@ async function syncSiplahData() {
                 };
             }
 
-            // Get category hierarchy using separate query with LEFT JOIN
+            // Get category hierarchy from JOIN result (similar to example function)
             let categoryHierarchy = null;
-            const [productCategories] = await connection.execute(
-                `SELECT ptc.category_id 
-                 FROM db_product_to_category ptc 
-                 WHERE ptc.product_id = ? 
-                 LIMIT 1`,
-                [product.product_id]
-            );
+            let basicCategory = null;
 
-            if (productCategories && productCategories.length > 0) {
-                const categoryId = productCategories[0].category_id;
+            // Get basic category info from JOIN result (like the example function does)
+            if (product.cat_id) {
+                basicCategory = {
+                    category_id: product.cat_id.toString(),
+                    name: product.cat_name,
+                    parent_id: product.cat_parent_id
+                        ? product.cat_parent_id.toString()
+                        : "0",
+                };
+            }
+
+            // First, try to use category_id from product table (direct relationship)
+            let categoryId = product.category_id;
+
+            // If no direct category_id, fall back to db_product_to_category (junction table)
+            if (!categoryId) {
+                const [productCategories] = await connection.execute(
+                    `SELECT ptc.category_id 
+                     FROM db_product_to_category ptc 
+                     WHERE ptc.product_id = ? 
+                     LIMIT 1`,
+                    [product.product_id]
+                );
+
+                if (productCategories && productCategories.length > 0) {
+                    categoryId = productCategories[0].category_id;
+                }
+            }
+
+            // Build hierarchy if category_id exists
+            if (categoryId) {
                 categoryHierarchy = await buildCategoryHierarchy(categoryId, connection);
             }
 
@@ -294,12 +341,23 @@ async function syncSiplahData() {
                 "@timestamp": new Date(),
             };
 
-            // Add category hierarchy if exists
+            // Add category hierarchy if exists, otherwise use basic category from JOIN
             if (categoryHierarchy) {
                 doc.category = categoryHierarchy.category || null;
                 doc.categoryChildren = categoryHierarchy.categoryChildren || [];
                 doc.grandCategoryChildren = categoryHierarchy.grandCategoryChildren || [];
                 doc.categoryLevel = categoryHierarchy.categoryLevel || 0;
+            } else if (basicCategory) {
+                // Use basic category info from JOIN (similar to example function)
+                doc.category = {
+                    value: basicCategory.category_id,
+                    parentId: basicCategory.parent_id,
+                    name: basicCategory.name,
+                    slug: "", // Will be populated if needed
+                };
+                doc.categoryChildren = [];
+                doc.grandCategoryChildren = [];
+                doc.categoryLevel = basicCategory.parent_id === "0" ? 0 : 1;
             }
 
             bulkOps.push(

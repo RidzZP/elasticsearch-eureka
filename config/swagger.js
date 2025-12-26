@@ -20,26 +20,16 @@ const options = {
         },
         servers: [
             {
-                url: "http://35.219.6.224:3002",
-                description: "Development server",
-            },
-            {
-                url: "http://localhost:3002",
-                description: "Local Gess",
+                url: `${process.env.PROTOCOL || "http"}://${
+                    process.env.HOST || "localhost"
+                }:${process.env.PORT || 3002}`,
+                description: "API Server",
             },
         ],
         tags: [
             {
                 name: "Health",
                 description: "Health check endpoints",
-            },
-            {
-                name: "Products",
-                description: "Product search and autocomplete endpoints",
-            },
-            {
-                name: "Users",
-                description: "User search and autocomplete endpoints",
             },
         ],
         components: {

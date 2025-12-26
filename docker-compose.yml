@@ -5,45 +5,25 @@ services:
             context: .
             dockerfile: Dockerfile
         container_name: elastic-eureka
-        ports:
-            - "3002:3002"
         environment:
-            NODE_ENV: development
-            PORT: 3002
-            ELASTICSEARCH_HOST: elasticsearch
-            ELASTICSEARCH_PORT: 9200
-            ELASTICSEARCH_PROTOCOL: http
-            API_PREFIX: /api/v1
-            DB_HOST: 35.219.24.215
-            DB_NAME: lkpp_siplah2019
-            DB_USER: Siplah2025
-            DB_PASS: "@SipLah2025!"
-            DB_DIALECT: mysql
+            - NODE_ENV=development
+            - CHOKIDAR_USEPOLLING=true
+            - CHOKIDAR_INTERVAL=1000
+        ports:
+            - "${PORT}:${PORT}"
+        env_file:
+            - .env
         volumes:
             - .:/usr/src/app
-        command: sh -c "npm install && npm run dev"
+        command: sh -c "npm run dev"
         depends_on:
-            - elasticsearch
-        networks:
-            - elastic-network
-        restart: unless-stopped
-
-    sync-siplah:
-        image: elastic-eureka
-        container_name: sync-siplah
-        command: node scripts/sync-siplah.js
-        environment:
-            NODE_ENV: development
-            ELASTICSEARCH_HOST: elasticsearch
-            ELASTICSEARCH_PORT: 9200
-            ELASTICSEARCH_PROTOCOL: http
-            DB_HOST: 35.219.24.215
-            DB_NAME: lkpp_siplah2019
-            DB_USER: Siplah2025
-            DB_PASS: "@SipLah2025!"
-            DB_DIALECT: mysql
-        depends_on:
-            - elasticsearch
+            elasticsearch:
+                condition: service_started
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:${PORT}/health"]
+            interval: 30s
+            timeout: 5s
+            retries: 3
         networks:
             - elastic-network
         restart: unless-stopped
@@ -57,24 +37,29 @@ services:
             ES_JAVA_OPTS: "-Xms256m -Xmx256m"
         ports:
             - "9400:9200"
+        volumes:
+            - es-data:/usr/share/elasticsearch/data
         networks:
             - elastic-network
         restart: unless-stopped
 
-    kibana:
-        image: docker.elastic.co/kibana/kibana:8.11.3
-        container_name: kibana
-        environment:
-            ELASTICSEARCH_HOSTS: http://elasticsearch:9200
-            xpack.security.enabled: "false"
-        ports:
-            - "5601:5601"
-        depends_on:
-            - elasticsearch
-        networks:
-            - elastic-network
-        restart: unless-stopped
+    # sync-siplah:
+    #     image: elastic-eureka
+    #     container_name: sync-siplah
+    #     command: node scripts/sync-siplah.js
+    #     env_file:
+    #         - .env
+    #     depends_on:
+    #         elasticsearch:
+    #             condition: service_started
+    #     networks:
+    #         - elastic-network
+    #     restart: unless-stopped
 
 networks:
     elastic-network:
         driver: bridge
+
+volumes:
+    es-data:
+        driver: local
