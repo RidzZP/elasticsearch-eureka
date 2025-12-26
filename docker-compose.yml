@@ -28,6 +28,26 @@ services:
             - elastic-network
         restart: unless-stopped
 
+    sync-siplah:
+        image: elastic-eureka
+        container_name: sync-siplah
+        command: node scripts/sync-siplah.js
+        environment:
+            NODE_ENV: development
+            ELASTICSEARCH_HOST: elasticsearch
+            ELASTICSEARCH_PORT: 9200
+            ELASTICSEARCH_PROTOCOL: http
+            DB_HOST: 35.219.24.215
+            DB_NAME: lkpp_siplah2019
+            DB_USER: Siplah2025
+            DB_PASS: "@SipLah2025!"
+            DB_DIALECT: mysql
+        depends_on:
+            - elasticsearch
+        networks:
+            - elastic-network
+        restart: unless-stopped
+
     elasticsearch:
         image: docker.elastic.co/elasticsearch/elasticsearch:8.11.3
         container_name: elasticsearch
