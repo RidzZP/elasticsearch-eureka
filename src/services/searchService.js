@@ -363,6 +363,207 @@ class SearchService {
             };
         }
     }
+
+    /**
+     * Get index mappings and settings
+     * @param {string} index - Index name
+     */
+    async getIndexInfo(index) {
+        try {
+            const esClient = require("../utils/elasticsearch");
+
+            // Check if index exists
+            const exists = await esClient.indexExists(index);
+            if (!exists) {
+                return {
+                    success: false,
+                    error: `Index "${index}" not found`,
+                };
+            }
+
+            // Get mappings
+            const mappings = await esClient.getIndexMappings(index);
+
+            // Get settings
+            const settings = await esClient.getIndexSettings(index);
+
+            return {
+                success: true,
+                index,
+                mappings: mappings ? mappings[index] : null,
+                settings: settings ? settings[index] : null,
+            };
+        } catch (error) {
+            console.error("Get index info error:", error);
+            return {
+                success: false,
+                error: error.message,
+            };
+        }
+    }
+
+    /**
+     * Delete an index
+     * @param {string} index - Index name to delete
+     */
+    async deleteIndex(index) {
+        try {
+            const esClient = require("../utils/elasticsearch");
+
+            // Check if index exists
+            const exists = await esClient.indexExists(index);
+            if (!exists) {
+                return {
+                    success: false,
+                    error: `Index "${index}" not found`,
+                };
+            }
+
+            // Delete the index
+            const deleted = await esClient.deleteIndex(index);
+
+            if (deleted) {
+                return {
+                    success: true,
+                    message: `Index "${index}" deleted successfully`,
+                    index,
+                };
+            } else {
+                return {
+                    success: false,
+                    error: `Failed to delete index "${index}"`,
+                };
+            }
+        } catch (error) {
+            console.error("Delete index error:", error);
+            return {
+                success: false,
+                error: error.message,
+            };
+        }
+    }
+
+    /**
+     * Re-run index setup (recreate indices)
+     */
+    async setupIndices() {
+        try {
+            const setupIndices = require("../../scripts/setup-indices");
+
+            // Run the setup indices function
+            await setupIndices();
+
+            return {
+                success: true,
+                message: "Index setup completed successfully",
+            };
+        } catch (error) {
+            console.error("Setup indices error:", error);
+            return {
+                success: false,
+                error: error.message,
+            };
+        }
+    }
+
+    /**
+     * Run Siplah data sync
+     */
+    async syncSiplah() {
+        try {
+            const syncSiplah = require("../../scripts/sync-siplah");
+
+            // Run the sync siplah function
+            await syncSiplah();
+
+            return {
+                success: true,
+                message: "Siplah data sync completed successfully",
+            };
+        } catch (error) {
+            console.error("Sync siplah error:", error);
+            return {
+                success: false,
+                error: error.message,
+            };
+        }
+    }
+
+    /**
+     * Run Eureka Bookhouse data sync
+     */
+    async syncEurekaBookhouse() {
+        try {
+            const syncEurekaBookhouse = require("../../scripts/sync-eurekabookhouse");
+
+            // Run the sync eureka bookhouse function
+            await syncEurekaBookhouse();
+
+            return {
+                success: true,
+                message: "Eureka Bookhouse data sync completed successfully",
+            };
+        } catch (error) {
+            console.error("Sync eureka bookhouse error:", error);
+            return {
+                success: false,
+                error: error.message,
+            };
+        }
+    }
+
+    /**
+     * Stop a running sync operation
+     * @param {string} syncType - Type of sync to stop (siplah, eurekabookhouse)
+     */
+    async stopSync(syncType) {
+        try {
+            const syncManager = require("../utils/syncManager");
+
+            if (!syncManager.isRunning(syncType)) {
+                return {
+                    success: false,
+                    error: `Sync ${syncType} is not currently running`,
+                };
+            }
+
+            syncManager.stopSync(syncType);
+
+            return {
+                success: true,
+                message: `Sync ${syncType} stop signal sent successfully`,
+                syncType,
+            };
+        } catch (error) {
+            console.error("Stop sync error:", error);
+            return {
+                success: false,
+                error: error.message,
+            };
+        }
+    }
+
+    /**
+     * Get status of sync operations
+     */
+    async getSyncStatus() {
+        try {
+            const syncManager = require("../utils/syncManager");
+
+            const statuses = syncManager.getAllSyncStatuses();
+
+            return {
+                success: true,
+                statuses,
+            };
+        } catch (error) {
+            console.error("Get sync status error:", error);
+            return {
+                success: false,
+                error: error.message,
+            };
+        }
+    }
 }
 
 module.exports = new SearchService();

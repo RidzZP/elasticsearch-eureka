@@ -371,6 +371,184 @@ class SearchController {
             });
         }
     }
+
+    /**
+     * Get index mappings and settings
+     * GET /api/v1/search/indices/:index/info
+     */
+    async getIndexInfo(req, res) {
+        try {
+            const { index } = req.params;
+
+            const result = await searchService.getIndexInfo(index);
+
+            if (!result.success) {
+                return res.status(404).json(result);
+            }
+
+            return res.json(result);
+        } catch (error) {
+            console.error("Get index info error:", error);
+            return res.status(500).json({
+                success: false,
+                message: "Internal server error",
+                error: error.message,
+            });
+        }
+    }
+
+    /**
+     * Delete an index
+     * DELETE /api/v1/search/indices/:index
+     */
+    async deleteIndex(req, res) {
+        try {
+            const { index } = req.params;
+
+            const result = await searchService.deleteIndex(index);
+
+            if (!result.success) {
+                return res.status(404).json(result);
+            }
+
+            return res.json(result);
+        } catch (error) {
+            console.error("Delete index error:", error);
+            return res.status(500).json({
+                success: false,
+                message: "Internal server error",
+                error: error.message,
+            });
+        }
+    }
+
+    /**
+     * Re-run index setup
+     * POST /api/v1/search/indices/setup
+     */
+    async setupIndices(req, res) {
+        try {
+            const result = await searchService.setupIndices();
+
+            if (!result.success) {
+                return res.status(500).json(result);
+            }
+
+            return res.json(result);
+        } catch (error) {
+            console.error("Setup indices error:", error);
+            return res.status(500).json({
+                success: false,
+                message: "Internal server error",
+                error: error.message,
+            });
+        }
+    }
+
+    /**
+     * Run Siplah data sync
+     * POST /api/v1/search/sync/siplah
+     */
+    async syncSiplah(req, res) {
+        try {
+            const result = await searchService.syncSiplah();
+
+            if (!result.success) {
+                return res.status(500).json(result);
+            }
+
+            return res.json(result);
+        } catch (error) {
+            console.error("Sync siplah error:", error);
+            return res.status(500).json({
+                success: false,
+                message: "Internal server error",
+                error: error.message,
+            });
+        }
+    }
+
+    /**
+     * Run Eureka Bookhouse data sync
+     * POST /api/v1/search/sync/eurekabookhouse
+     */
+    async syncEurekaBookhouse(req, res) {
+        try {
+            const result = await searchService.syncEurekaBookhouse();
+
+            if (!result.success) {
+                return res.status(500).json(result);
+            }
+
+            return res.json(result);
+        } catch (error) {
+            console.error("Sync eureka bookhouse error:", error);
+            return res.status(500).json({
+                success: false,
+                message: "Internal server error",
+                error: error.message,
+            });
+        }
+    }
+
+    /**
+     * Stop a running sync operation
+     * POST /api/v1/search/sync/:syncType/stop
+     */
+    async stopSync(req, res) {
+        try {
+            const { syncType } = req.params;
+
+            // Validate sync type
+            const validSyncTypes = ["siplah", "eurekabookhouse"];
+            if (!validSyncTypes.includes(syncType)) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Invalid sync type. Valid types: ${validSyncTypes.join(
+                        ", "
+                    )}`,
+                });
+            }
+
+            const result = await searchService.stopSync(syncType);
+
+            if (!result.success) {
+                return res.status(400).json(result);
+            }
+
+            return res.json(result);
+        } catch (error) {
+            console.error("Stop sync error:", error);
+            return res.status(500).json({
+                success: false,
+                message: "Internal server error",
+                error: error.message,
+            });
+        }
+    }
+
+    /**
+     * Get status of sync operations
+     * GET /api/v1/search/sync/status
+     */
+    async getSyncStatus(req, res) {
+        try {
+            const result = await searchService.getSyncStatus();
+
+            if (!result.success) {
+                return res.status(500).json(result);
+            }
+
+            return res.json(result);
+        } catch (error) {
+            console.error("Get sync status error:", error);
+            return res.status(500).json({
+                success: false,
+                message: "Internal server error",
+                error: error.message,
+            });
+        }
+    }
 }
 
 module.exports = new SearchController();

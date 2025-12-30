@@ -1,6 +1,7 @@
 const mysql = require("mysql2/promise");
 const { Client } = require("@elastic/elasticsearch");
 const models = require("../src/models");
+const syncManager = require("../src/utils/syncManager");
 
 const DB_CONFIG = {
     host: process.env.DB_HOST,
@@ -193,205 +194,318 @@ async function syncSiplahData() {
     console.log("🔄 Starting Siplah data sync...\n");
 
     let connection;
+    let stopRequested = false;
+
     try {
+        // Register sync with manager
+        syncManager.startSync("siplah", () => {
+            stopRequested = true;
+            console.log("🛑 Stop signal received for Siplah sync");
+        });
+
         // Connect to MySQL
         console.log("📡 Connecting to MySQL database...");
         connection = await mysql.createConnection(DB_CONFIG);
         console.log("✅ Connected to MySQL\n");
 
-        let totalSynced = 0;
-        let skipped = 0;
-
-        // Sync db_product with related data
-        console.log("📦 Syncing products from db_product...");
-        const [products] = await connection.execute(`
-            SELECT 
-                p.product_id, p.model, p.sku, p.isbn, p.location,
-                p.quantity, p.image, p.manufacturer_id, p.category_id,
-                p.shipping, p.price,
-                p.weight, p.length, p.width, p.height,
-                p.subtract, p.minimum, p.status, 
-                p.date_added, p.date_modified, p.viewed, p.mall_id,
-                pd.name, pd.description,
-                mfg.manufacturer_id as mfg_id, mfg.name as mfg_name, 
-                mfg.slug as mfg_slug, mfg.image as mfg_image, mfg.status as mfg_status,
-                m.mall_id as mall_id_ref, m.mall_code, m.name as mall_name, 
-                m.slug as mall_slug, m.image as mall_image,
-                cat.category_id as cat_id, cat.name as cat_name, 
-                cat.parent_id as cat_parent_id
+        // Get total count
+        console.log("📊 Counting total products...");
+        const [countResult] = await connection.execute(`
+            SELECT COUNT(*) as total 
             FROM db_product p
-            INNER JOIN db_product_description pd ON p.product_id = pd.product_id
-            LEFT JOIN db_manufacturer mfg ON p.manufacturer_id = mfg.manufacturer_id
-            LEFT JOIN db_mall m ON p.mall_id = m.mall_id
-            LEFT JOIN db_category_sandbox cat ON p.category_id = cat.category_id AND cat.status = 1
             WHERE p.status = 1
         `);
+        const totalProducts = countResult[0].total;
+        console.log(`Found ${totalProducts} products to sync\n`);
 
-        console.log(`Found ${products.length} products from db_product`);
+        let totalSynced = 0;
+        let skipped = 0;
+        const BATCH_SIZE = 500; // Process 500 products at a time
+        let offset = 0;
 
-        const bulkOps = [];
-        let processedCount = 0;
+        // Process products in batches
+        console.log("📦 Starting batch sync...");
 
-        for (const product of products) {
-            processedCount++;
-
-            // Get manufacturer from JOIN result
-            let manufacturer = null;
-            if (product.mfg_id) {
-                manufacturer = {
-                    manufacturer_id: product.mfg_id.toString(),
-                    name: product.mfg_name,
-                    slug: product.mfg_slug,
-                    image: product.mfg_image,
-                    status: product.mfg_status ? product.mfg_status.toString() : null,
-                };
+        while (offset < totalProducts) {
+            // Check if stop was requested
+            if (stopRequested) {
+                console.log("🛑 Siplah sync stopped by user request");
+                break;
             }
 
-            // Get mall from JOIN result
-            let mall = null;
-            if (product.mall_id_ref) {
-                mall = {
-                    mall_id: product.mall_id_ref.toString(),
-                    mall_code: product.mall_code,
-                    name: product.mall_name,
-                    slug: product.mall_slug,
-                    image: product.mall_image,
-                };
+            // Category cache for this batch only
+            const categoryCache = new Map();
+
+            // Fetch batch of products
+            const [products] = await connection.execute(`
+                SELECT 
+                    p.product_id, p.model, p.sku, p.isbn, p.location,
+                    p.quantity, p.image, p.manufacturer_id, p.category_id,
+                    p.shipping, p.price,
+                    p.weight, p.length, p.width, p.height,
+                    p.subtract, p.minimum, p.status, 
+                    p.date_added, p.date_modified, p.viewed, p.mall_id,
+                    p.dpp_price, p.ppn_price, p.dpp_nilai_lain, p.pph_price, p.dana_terima,
+                    p.price_nego, p.price1, p.price2, p.price3, p.price4, p.price5,
+                    p.grosir_min1, p.grosir_price1, p.grosir_min2, p.grosir_price2,
+                    p.grosir_min3, p.grosir_price3, p.grosir_min4, p.grosir_price4,
+                    p.kondisi, p.date_available, p.jenjang, p.kelas, p.semester,
+                    p.processor, p.memory, p.harddisk, p.cd_dvd, p.monitor,
+                    p.sistem_operasi, p.aplikasi_terpasang, p.garansi, p.barang_produsen,
+                    p.id_user_approve, p.blokir, p.disabled, p.hapus,
+                    p.date_verified, p.date_deleted, p.layout, p.lama_pengerjaan,
+                    p.is_image_external, p.grosir_pricezone1, p.grosir_pricezone2,
+                    p.grosir_pricezone3, p.grosir_pricezone4, p.grosir_pricezone5,
+                    p.produksi, p.availability, p.ppn_type, p.ppnTagItem, p.ppnTagName,
+                    p.month_added,
+                    pd.name, pd.description,
+                    mfg.manufacturer_id as mfg_id, mfg.name as mfg_name, 
+                    mfg.slug as mfg_slug, mfg.image as mfg_image, mfg.status as mfg_status,
+                    m.mall_id as mall_id_ref, m.mall_code, m.name as mall_name, 
+                    m.slug as mall_slug, m.image as mall_image,
+                    cat.category_id as cat_id, cat.name as cat_name, 
+                    cat.parent_id as cat_parent_id
+                FROM db_product p
+                INNER JOIN db_product_description pd ON p.product_id = pd.product_id
+                LEFT JOIN db_manufacturer mfg ON p.manufacturer_id = mfg.manufacturer_id
+                INNER JOIN db_mall m ON p.mall_id = m.mall_id
+                LEFT JOIN db_category_sandbox cat ON p.category_id = cat.category_id AND cat.status = 1
+                WHERE p.status = 1
+                LIMIT ${BATCH_SIZE} OFFSET ${offset}
+            `);
+
+            if (products.length === 0) {
+                break; // No more products
             }
 
-            // Get category hierarchy from JOIN result (similar to example function)
-            let categoryHierarchy = null;
-            let basicCategory = null;
+            const bulkOps = [];
 
-            // Get basic category info from JOIN result (like the example function does)
-            if (product.cat_id) {
-                basicCategory = {
-                    category_id: product.cat_id.toString(),
-                    name: product.cat_name,
-                    parent_id: product.cat_parent_id
-                        ? product.cat_parent_id.toString()
-                        : "0",
-                };
-            }
+            for (const product of products) {
+                // Check if stop was requested
+                if (stopRequested) {
+                    console.log("🛑 Siplah sync stopped by user request");
+                    break;
+                }
 
-            // First, try to use category_id from product table (direct relationship)
-            let categoryId = product.category_id;
+                // Get manufacturer from JOIN result
+                let manufacturer = null;
+                if (product.mfg_id) {
+                    manufacturer = {
+                        manufacturer_id: product.mfg_id.toString(),
+                        name: product.mfg_name,
+                        slug: product.mfg_slug,
+                        image: product.mfg_image,
+                        status: product.mfg_status ? product.mfg_status.toString() : null,
+                    };
+                }
 
-            // If no direct category_id, fall back to db_product_to_category (junction table)
-            if (!categoryId) {
-                const [productCategories] = await connection.execute(
-                    `SELECT ptc.category_id 
+                // Get mall from JOIN result
+                let mall = null;
+                if (product.mall_id_ref) {
+                    mall = {
+                        mall_id: product.mall_id_ref.toString(),
+                        mall_code: product.mall_code,
+                        name: product.mall_name,
+                        slug: product.mall_slug,
+                        image: product.mall_image,
+                    };
+                }
+
+                // Get category hierarchy from JOIN result (similar to example function)
+                let categoryHierarchy = null;
+                let basicCategory = null;
+
+                // Get basic category info from JOIN result (like the example function does)
+                if (product.cat_id) {
+                    basicCategory = {
+                        category_id: product.cat_id.toString(),
+                        name: product.cat_name,
+                        parent_id: product.cat_parent_id
+                            ? product.cat_parent_id.toString()
+                            : "0",
+                    };
+                }
+
+                // First, try to use category_id from product table (direct relationship)
+                let categoryId = product.category_id;
+
+                // If no direct category_id, fall back to db_product_to_category (junction table)
+                if (!categoryId) {
+                    const [productCategories] = await connection.execute(
+                        `SELECT ptc.category_id 
                      FROM db_product_to_category ptc 
                      WHERE ptc.product_id = ? 
                      LIMIT 1`,
-                    [product.product_id]
-                );
-
-                if (productCategories && productCategories.length > 0) {
-                    categoryId = productCategories[0].category_id;
-                }
-            }
-
-            // Build hierarchy if category_id exists
-            if (categoryId) {
-                categoryHierarchy = await buildCategoryHierarchy(categoryId, connection);
-            }
-
-            // Skip if no name or invalid data
-            if (!product.name) {
-                skipped++;
-                if (processedCount % 100 === 0) {
-                    process.stdout.write(
-                        `\r   Processed: ${processedCount}/${products.length} (synced: ${totalSynced}, skipped: ${skipped})...`
+                        [product.product_id]
                     );
+
+                    if (productCategories && productCategories.length > 0) {
+                        categoryId = productCategories[0].category_id;
+                    }
                 }
-                continue;
-            }
 
-            // Prepare document
-            const doc = {
-                product_id: product.product_id.toString(),
-                model: product.model,
-                sku: product.sku,
-                isbn: product.isbn,
-                location: product.location,
-                quantity: product.quantity,
-                image: product.image,
-                manufacturer_id: product.manufacturer_id
-                    ? product.manufacturer_id.toString()
-                    : null,
-                shipping: product.shipping ? true : false,
-                price: product.price ? parseFloat(product.price) : 0,
-                weight: product.weight ? parseFloat(product.weight) : 0,
-                length: product.length ? parseFloat(product.length) : 0,
-                width: product.width ? parseFloat(product.width) : 0,
-                height: product.height ? parseFloat(product.height) : 0,
-                subtract: product.subtract ? true : false,
-                minimum: product.minimum || 1,
-                status: product.status ? product.status.toString() : "0",
-                date_added: product.date_added,
-                date_modified: product.date_modified,
-                viewed: product.viewed || 0,
-                mall_id: product.mall_id ? product.mall_id.toString() : null,
-                name: product.name,
-                description: product.description || "",
-                manufacturer: manufacturer,
-                mall: mall,
-                suggest: product.name,
-                "@timestamp": new Date(),
-            };
+                // Get hierarchy from cache or build it
+                if (categoryId) {
+                    // Check cache first
+                    if (!categoryCache.has(categoryId)) {
+                        // Build and cache it for this batch
+                        const hierarchy = await buildCategoryHierarchy(
+                            categoryId,
+                            connection
+                        );
+                        if (hierarchy) {
+                            categoryCache.set(categoryId, hierarchy);
+                        }
+                    }
+                    categoryHierarchy = categoryCache.get(categoryId) || null;
+                }
 
-            // Add category hierarchy if exists, otherwise use basic category from JOIN
-            if (categoryHierarchy) {
-                doc.category = categoryHierarchy.category || null;
-                doc.categoryChildren = categoryHierarchy.categoryChildren || [];
-                doc.grandCategoryChildren = categoryHierarchy.grandCategoryChildren || [];
-                doc.categoryLevel = categoryHierarchy.categoryLevel || 0;
-            } else if (basicCategory) {
-                // Use basic category info from JOIN (similar to example function)
-                doc.category = {
-                    value: basicCategory.category_id,
-                    parentId: basicCategory.parent_id,
-                    name: basicCategory.name,
-                    slug: "", // Will be populated if needed
+                // Skip if no name or invalid data
+                if (!product.name) {
+                    skipped++;
+                    continue;
+                }
+
+                // Prepare document
+                const doc = {
+                    product_id: product.product_id.toString(),
+                    model: product.model,
+                    sku: product.sku,
+                    isbn: product.isbn,
+                    location: product.location,
+                    quantity: product.quantity,
+                    image: product.image,
+                    manufacturer_id: product.manufacturer_id
+                        ? product.manufacturer_id.toString()
+                        : null,
+                    shipping: product.shipping ? true : false,
+                    price: product.price ? parseFloat(product.price) : 0,
+                    dpp_price: product.dpp_price || null,
+                    ppn_price: product.ppn_price || null,
+                    dpp_nilai_lain: product.dpp_nilai_lain
+                        ? parseFloat(product.dpp_nilai_lain)
+                        : null,
+                    pph_price: product.pph_price || null,
+                    dana_terima: product.dana_terima || null,
+                    price_nego: product.price_nego || 0,
+                    price1: product.price1 || 0,
+                    price2: product.price2 || 0,
+                    price3: product.price3 || 0,
+                    price4: product.price4 || 0,
+                    price5: product.price5 || 0,
+                    grosir_min1: product.grosir_min1 || 0,
+                    grosir_price1: product.grosir_price1 || 0,
+                    grosir_min2: product.grosir_min2 || 0,
+                    grosir_price2: product.grosir_price2 || 0,
+                    grosir_min3: product.grosir_min3 || 0,
+                    grosir_price3: product.grosir_price3 || 0,
+                    grosir_min4: product.grosir_min4 || 0,
+                    grosir_price4: product.grosir_price4 || 0,
+                    kondisi: product.kondisi || null,
+                    date_available: product.date_available || null,
+                    jenjang: product.jenjang || null,
+                    kelas: product.kelas || null,
+                    semester: product.semester || null,
+                    processor: product.processor || null,
+                    memory: product.memory || null,
+                    harddisk: product.harddisk || null,
+                    cd_dvd: product.cd_dvd || null,
+                    monitor: product.monitor || null,
+                    sistem_operasi: product.sistem_operasi || null,
+                    aplikasi_terpasang: product.aplikasi_terpasang || null,
+                    garansi: product.garansi || null,
+                    barang_produsen: product.barang_produsen || null,
+                    weight: product.weight ? parseFloat(product.weight) : 0,
+                    length: product.length ? parseFloat(product.length) : 0,
+                    width: product.width ? parseFloat(product.width) : 0,
+                    height: product.height ? parseFloat(product.height) : 0,
+                    subtract: product.subtract ? true : false,
+                    minimum: product.minimum || 1,
+                    status: product.status ? product.status.toString() : "0",
+                    id_user_approve: product.id_user_approve || 0,
+                    blokir: product.blokir || 0,
+                    disabled: product.disabled || "N",
+                    hapus: product.hapus || "N",
+                    date_added: product.date_added,
+                    date_modified: product.date_modified,
+                    date_verified: product.date_verified || null,
+                    date_deleted: product.date_deleted || null,
+                    viewed: product.viewed || 0,
+                    layout: product.layout || 1,
+                    lama_pengerjaan: product.lama_pengerjaan || 0,
+                    is_image_external: product.is_image_external || 0,
+                    grosir_pricezone1: product.grosir_pricezone1 || null,
+                    grosir_pricezone2: product.grosir_pricezone2 || null,
+                    grosir_pricezone3: product.grosir_pricezone3 || null,
+                    grosir_pricezone4: product.grosir_pricezone4 || null,
+                    grosir_pricezone5: product.grosir_pricezone5 || null,
+                    produksi: product.produksi || null,
+                    availability: product.availability || null,
+                    ppn_type: product.ppn_type || null,
+                    ppn_tag_item: product.ppnTagItem || 0,
+                    ppn_tag_name: product.ppnTagName || null,
+                    month_added: product.month_added || null,
+                    mall_id: product.mall_id ? product.mall_id.toString() : null,
+                    name: product.name,
+                    description: product.description || "",
+                    manufacturer: manufacturer,
+                    mall: mall,
+                    suggest: product.name,
+                    "@timestamp": new Date(),
                 };
-                doc.categoryChildren = [];
-                doc.grandCategoryChildren = [];
-                doc.categoryLevel = basicCategory.parent_id === "0" ? 0 : 1;
+
+                // Add category hierarchy if exists, otherwise use basic category from JOIN
+                if (categoryHierarchy) {
+                    doc.category = categoryHierarchy.category || null;
+                    doc.categoryChildren = categoryHierarchy.categoryChildren || [];
+                    doc.grandCategoryChildren =
+                        categoryHierarchy.grandCategoryChildren || [];
+                    doc.categoryLevel = categoryHierarchy.categoryLevel || 0;
+                } else if (basicCategory) {
+                    // Use basic category info from JOIN (similar to example function)
+                    doc.category = {
+                        value: basicCategory.category_id,
+                        parentId: basicCategory.parent_id,
+                        name: basicCategory.name,
+                        slug: "", // Will be populated if needed
+                    };
+                    doc.categoryChildren = [];
+                    doc.grandCategoryChildren = [];
+                    doc.categoryLevel = basicCategory.parent_id === "0" ? 0 : 1;
+                }
+
+                bulkOps.push(
+                    {
+                        update: {
+                            _index: "siplah",
+                            _id: `product_${product.product_id}`,
+                        },
+                    },
+                    {
+                        doc: doc,
+                        doc_as_upsert: true,
+                    }
+                );
             }
 
-            bulkOps.push(
-                {
-                    update: {
-                        _index: "siplah",
-                        _id: `product_${product.product_id}`,
-                    },
-                },
-                {
-                    doc: doc,
-                    doc_as_upsert: true,
-                }
-            );
-
-            // Bulk insert every 100 documents
-            if (bulkOps.length >= 200) {
+            // Insert batch to Elasticsearch
+            if (bulkOps.length > 0) {
                 await esClient.bulk({ body: bulkOps });
                 totalSynced += bulkOps.length / 2;
-                bulkOps.length = 0;
-                process.stdout.write(
-                    `\r   Processed: ${processedCount}/${products.length} (synced: ${totalSynced}, skipped: ${skipped})...`
-                );
             }
-        }
 
-        // Insert remaining documents
-        if (bulkOps.length > 0) {
-            await esClient.bulk({ body: bulkOps });
-            totalSynced += bulkOps.length / 2;
+            // Update progress
+            offset += products.length;
+            process.stdout.write(
+                `\r   Progress: ${offset}/${totalProducts} (synced: ${totalSynced}, skipped: ${skipped})...`
+            );
+
+            // Clear category cache for this batch
+            categoryCache.clear();
         }
 
         console.log(
-            `\n✅ Completed! Processed ${processedCount} products (synced: ${totalSynced}, skipped: ${skipped})\n`
+            `\n✅ Completed! Processed ${totalProducts} products (synced: ${totalSynced}, skipped: ${skipped})\n`
         );
 
         // Refresh index
@@ -402,10 +516,21 @@ async function syncSiplahData() {
         // Get index stats
         const stats = await esClient.count({ index: "siplah" });
         console.log(`📊 Total documents in siplah index: ${stats.count}\n`);
+
+        console.log("\n✨ Siplah sync completed successfully!\n");
     } catch (error) {
-        console.error("❌ Error syncing siplah data:", error);
-        process.exit(1);
+        if (stopRequested) {
+            console.log("🛑 Siplah sync was stopped by user request");
+        } else {
+            console.error("❌ Error syncing siplah data:", error);
+        }
+        throw error; // Re-throw to be handled by caller
     } finally {
+        // Clean up sync manager
+        if (syncManager.isRunning("siplah")) {
+            syncManager.stopSync("siplah");
+        }
+
         if (connection) {
             await connection.end();
             console.log("🔌 Database connection closed");

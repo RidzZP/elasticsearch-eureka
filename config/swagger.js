@@ -31,6 +31,14 @@ const options = {
                 name: "Health",
                 description: "Health check endpoints",
             },
+            {
+                name: "Indices",
+                description: "Elasticsearch index management endpoints",
+            },
+            {
+                name: "Sync",
+                description: "Data synchronization endpoints",
+            },
         ],
         components: {
             schemas: {

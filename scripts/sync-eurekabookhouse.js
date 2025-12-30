@@ -1,5 +1,6 @@
 const mysql = require("mysql2/promise");
 const { Client } = require("@elastic/elasticsearch");
+const syncManager = require("../src/utils/syncManager");
 
 const DB_CONFIG = {
     host: process.env.DB_HOST || "34.50.96.60",
@@ -21,7 +22,15 @@ async function syncData() {
     console.log("🔄 Starting Eureka Bookhouse data sync...\n");
 
     let connection;
+    let stopRequested = false;
+
     try {
+        // Register sync with manager
+        syncManager.startSync("eurekabookhouse", () => {
+            stopRequested = true;
+            console.log("🛑 Stop signal received for Eureka Bookhouse sync");
+        });
+
         // Connect to MySQL
         console.log("📡 Connecting to MySQL database...");
         connection = await mysql.createConnection(DB_CONFIG);
@@ -39,6 +48,12 @@ async function syncData() {
 
         const bulkOps = [];
         for (const product of products) {
+            // Check if stop was requested
+            if (stopRequested) {
+                console.log("🛑 Eureka Bookhouse sync stopped by user request");
+                break;
+            }
+
             // Skip if product has no name or invalid data
             if (!product.name || !product.product_id) {
                 duplicates++;
@@ -68,6 +83,14 @@ async function syncData() {
 
             // Bulk insert every 500 documents
             if (bulkOps.length >= 1000) {
+                // Check if stop was requested before bulk operation
+                if (stopRequested) {
+                    console.log(
+                        "🛑 Eureka Bookhouse sync stopped by user request before bulk insert"
+                    );
+                    break;
+                }
+
                 await esClient.bulk({ body: bulkOps });
                 totalSynced += bulkOps.length / 2;
                 bulkOps.length = 0;
@@ -76,7 +99,7 @@ async function syncData() {
         }
 
         // Insert remaining documents
-        if (bulkOps.length > 0) {
+        if (bulkOps.length > 0 && !stopRequested) {
             await esClient.bulk({ body: bulkOps });
             totalSynced += bulkOps.length / 2;
         }
@@ -154,17 +177,28 @@ async function syncData() {
         console.log(
             `   http://localhost:3002/api/v1/search/eurekabookhouse/products/autocomplete?q=test\n`
         );
+
+        console.log("\n✨ Eureka Bookhouse sync completed successfully!\n");
     } catch (error) {
-        console.error("\n❌ Error during sync:", error.message);
-        if (error.code === "ECONNREFUSED") {
-            console.error(
-                "   Database connection refused. Make sure your VPN is connected."
-            );
-        } else if (error.code === "ER_ACCESS_DENIED_ERROR") {
-            console.error("   Access denied. Check your database credentials.");
+        if (stopRequested) {
+            console.log("🛑 Eureka Bookhouse sync was stopped by user request");
+        } else {
+            console.error("\n❌ Error during sync:", error.message);
+            if (error.code === "ECONNREFUSED") {
+                console.error(
+                    "   Database connection refused. Make sure your VPN is connected."
+                );
+            } else if (error.code === "ER_ACCESS_DENIED_ERROR") {
+                console.error("   Access denied. Check your database credentials.");
+            }
         }
-        process.exit(1);
+        throw error; // Re-throw to be handled by caller
     } finally {
+        // Clean up sync manager
+        if (syncManager.isRunning("eurekabookhouse")) {
+            syncManager.stopSync("eurekabookhouse");
+        }
+
         if (connection) {
             await connection.end();
             console.log("🔌 MySQL connection closed");
@@ -173,3 +207,10 @@ async function syncData() {
 }
 
 syncData();
+
+// Run if called directly
+if (require.main === module) {
+    syncData();
+}
+
+module.exports = syncData;

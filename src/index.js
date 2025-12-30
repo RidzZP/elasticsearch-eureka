@@ -42,6 +42,13 @@ app.get("/", (req, res) => {
         endpoints: {
             health: `${config.server.apiPrefix}/search/health`,
             indices: `${config.server.apiPrefix}/search/indices`,
+            indexInfo: `${config.server.apiPrefix}/search/indices/:index/info`,
+            deleteIndex: `${config.server.apiPrefix}/search/indices/:index (DELETE)`,
+            setupIndices: `${config.server.apiPrefix}/search/indices/setup (POST)`,
+            syncSiplah: `${config.server.apiPrefix}/search/sync/siplah (POST)`,
+            syncEurekaBookhouse: `${config.server.apiPrefix}/search/sync/eurekabookhouse (POST)`,
+            stopSync: `${config.server.apiPrefix}/search/sync/:syncType/stop (POST)`,
+            syncStatus: `${config.server.apiPrefix}/search/sync/status (GET)`,
             indexData: `${config.server.apiPrefix}/search/indices/:index/data`,
             productsAutocomplete: `${config.server.apiPrefix}/search/products/autocomplete?q=query`,
             productsSuggest: `${config.server.apiPrefix}/search/products/suggest?q=query`,

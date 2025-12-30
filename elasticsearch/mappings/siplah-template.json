@@ -64,6 +64,165 @@
             "price": {
                 "type": "float"
             },
+            "dpp_price": {
+                "type": "integer"
+            },
+            "ppn_price": {
+                "type": "integer"
+            },
+            "dpp_nilai_lain": {
+                "type": "float"
+            },
+            "pph_price": {
+                "type": "integer"
+            },
+            "dana_terima": {
+                "type": "integer"
+            },
+            "price_nego": {
+                "type": "integer"
+            },
+            "price1": {
+                "type": "integer"
+            },
+            "price2": {
+                "type": "integer"
+            },
+            "price3": {
+                "type": "integer"
+            },
+            "price4": {
+                "type": "integer"
+            },
+            "price5": {
+                "type": "integer"
+            },
+            "grosir_min1": {
+                "type": "integer"
+            },
+            "grosir_price1": {
+                "type": "integer"
+            },
+            "grosir_min2": {
+                "type": "integer"
+            },
+            "grosir_price2": {
+                "type": "integer"
+            },
+            "grosir_min3": {
+                "type": "integer"
+            },
+            "grosir_price3": {
+                "type": "integer"
+            },
+            "grosir_min4": {
+                "type": "integer"
+            },
+            "grosir_price4": {
+                "type": "integer"
+            },
+            "kondisi": {
+                "type": "keyword"
+            },
+            "date_available": {
+                "type": "date"
+            },
+            "jenjang": {
+                "type": "keyword"
+            },
+            "kelas": {
+                "type": "keyword"
+            },
+            "semester": {
+                "type": "integer"
+            },
+            "processor": {
+                "type": "text"
+            },
+            "memory": {
+                "type": "text"
+            },
+            "harddisk": {
+                "type": "text"
+            },
+            "cd_dvd": {
+                "type": "keyword"
+            },
+            "monitor": {
+                "type": "text"
+            },
+            "sistem_operasi": {
+                "type": "text"
+            },
+            "aplikasi_terpasang": {
+                "type": "text"
+            },
+            "garansi": {
+                "type": "text"
+            },
+            "barang_produsen": {
+                "type": "text"
+            },
+            "id_user_approve": {
+                "type": "integer"
+            },
+            "blokir": {
+                "type": "integer"
+            },
+            "disabled": {
+                "type": "keyword"
+            },
+            "hapus": {
+                "type": "keyword"
+            },
+            "date_verified": {
+                "type": "date"
+            },
+            "date_deleted": {
+                "type": "date"
+            },
+            "layout": {
+                "type": "integer"
+            },
+            "lama_pengerjaan": {
+                "type": "integer"
+            },
+            "is_image_external": {
+                "type": "integer"
+            },
+            "grosir_pricezone1": {
+                "type": "text"
+            },
+            "grosir_pricezone2": {
+                "type": "text"
+            },
+            "grosir_pricezone3": {
+                "type": "text"
+            },
+            "grosir_pricezone4": {
+                "type": "text"
+            },
+            "grosir_pricezone5": {
+                "type": "text"
+            },
+            "produksi": {
+                "type": "keyword"
+            },
+            "availability": {
+                "type": "keyword"
+            },
+            "ppn_type": {
+                "type": "keyword"
+            },
+            "ppn_tag_item": {
+                "type": "integer"
+            },
+            "ppn_tag_name": {
+                "type": "text"
+            },
+            "month_added": {
+                "type": "integer"
+            },
             "weight": {
                 "type": "float"
             },

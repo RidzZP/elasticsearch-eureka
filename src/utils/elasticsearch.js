@@ -64,6 +64,26 @@ class ElasticsearchClient {
             return false;
         }
     }
+
+    async getIndexMappings(index) {
+        try {
+            const response = await this.client.indices.getMapping({ index });
+            return response;
+        } catch (error) {
+            console.error(`❌ Error getting mappings for index ${index}:`, error.message);
+            return null;
+        }
+    }
+
+    async getIndexSettings(index) {
+        try {
+            const response = await this.client.indices.getSettings({ index });
+            return response;
+        } catch (error) {
+            console.error(`❌ Error getting settings for index ${index}:`, error.message);
+            return null;
+        }
+    }
 }
 
 module.exports = new ElasticsearchClient();
