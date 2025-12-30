@@ -19,11 +19,6 @@ services:
         depends_on:
             elasticsearch:
                 condition: service_started
-        healthcheck:
-            test: ["CMD", "curl", "-f", "http://localhost:${PORT}/health"]
-            interval: 30s
-            timeout: 5s
-            retries: 3
         networks:
             - elastic-network
         restart: unless-stopped
@@ -32,9 +27,9 @@ services:
         image: docker.elastic.co/elasticsearch/elasticsearch:8.11.3
         container_name: elasticsearch
         environment:
-            discovery.type: single-node
-            xpack.security.enabled: "false"
-            ES_JAVA_OPTS: "-Xms256m -Xmx256m"
+            - discovery.type=single-node
+            - xpack.security.enabled=false
+            - ES_JAVA_OPTS=-Xms256m -Xmx256m
         ports:
             - "9400:9200"
         volumes:
@@ -43,18 +38,20 @@ services:
             - elastic-network
         restart: unless-stopped
 
-    # sync-siplah:
-    #     image: elastic-eureka
-    #     container_name: sync-siplah
-    #     command: node scripts/sync-siplah.js
-    #     env_file:
-    #         - .env
-    #     depends_on:
-    #         elasticsearch:
-    #             condition: service_started
-    #     networks:
-    #         - elastic-network
-    #     restart: unless-stopped
+    sync-siplah:
+        image: elastic-eureka
+        container_name: sync-siplah
+        command: node scripts/sync-siplah.js
+        env_file:
+            - .env
+        volumes:
+            - .:/usr/src/app
+        depends_on:
+            elasticsearch:
+                condition: service_started
+        networks:
+            - elastic-network
+        restart: unless-stopped
 
 networks:
     elastic-network:
