@@ -256,6 +256,39 @@ router.post("/sync/siplah", searchController.syncSiplah.bind(searchController));
 
 /**
  * @swagger
+ * /api/v1/search/sync/siplah-providers:
+ *   post:
+ *     summary: Run Siplah providers synchronization
+ *     description: Synchronize provider data from Siplah database to Elasticsearch siplah-providers index. This process will sync mall/provider data from the MySQL database to Elasticsearch.
+ *     tags: [Sync]
+ *     responses:
+ *       200:
+ *         description: Siplah providers sync completed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Siplah providers sync completed successfully"
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.post(
+    "/sync/siplah-providers",
+    searchController.syncSiplahProviders.bind(searchController)
+);
+
+/**
+ * @swagger
  * /api/v1/search/sync/eurekabookhouse:
  *   post:
  *     summary: Run Eureka Bookhouse data synchronization

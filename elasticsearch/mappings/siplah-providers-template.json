@@ -1,0 +1,223 @@
+{
+    "index_patterns": ["siplah-providers"],
+    "settings": {
+        "number_of_shards": 1,
+        "number_of_replicas": 1,
+        "analysis": {
+            "analyzer": {
+                "autocomplete": {
+                    "tokenizer": "autocomplete_tokenizer",
+                    "filter": ["lowercase"]
+                },
+                "autocomplete_search": {
+                    "tokenizer": "lowercase"
+                }
+            },
+            "tokenizer": {
+                "autocomplete_tokenizer": {
+                    "type": "edge_ngram",
+                    "min_gram": 2,
+                    "max_gram": 20,
+                    "token_chars": ["letter", "digit"]
+                }
+            }
+        }
+    },
+    "mappings": {
+        "properties": {
+            "mall_id": {
+                "type": "keyword"
+            },
+            "mall_code": {
+                "type": "keyword"
+            },
+            "mall_type": {
+                "properties": {
+                    "id": {
+                        "type": "keyword"
+                    },
+                    "name": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": {
+                                "type": "keyword",
+                                "ignore_above": 256
+                            }
+                        }
+                    },
+                    "description": {
+                        "type": "text"
+                    }
+                }
+            },
+            "image": {
+                "type": "text"
+            },
+            "slug": {
+                "type": "keyword"
+            },
+            "image_header": {
+                "type": "text"
+            },
+            "email": {
+                "type": "keyword"
+            },
+            "avatar": {
+                "type": "text"
+            },
+            "nama_perusahaan": {
+                "type": "text",
+                "fields": {
+                    "keyword": {
+                        "type": "keyword",
+                        "ignore_above": 256
+                    }
+                }
+            },
+            "nama_merk": {
+                "type": "text",
+                "fields": {
+                    "keyword": {
+                        "type": "keyword",
+                        "ignore_above": 256
+                    }
+                }
+            },
+            "alamat_perusahaan": {
+                "type": "text"
+            },
+            "jenis": {
+                "type": "keyword"
+            },
+            "jenis_usaha": {
+                "type": "keyword"
+            },
+            "email_pic": {
+                "type": "keyword"
+            },
+            "nama_pic": {
+                "type": "text",
+                "fields": {
+                    "keyword": {
+                        "type": "keyword",
+                        "ignore_above": 256
+                    }
+                }
+            },
+            "jabatan_pic": {
+                "type": "text",
+                "fields": {
+                    "keyword": {
+                        "type": "keyword",
+                        "ignore_above": 256
+                    }
+                }
+            },
+            "telp_pic": {
+                "type": "keyword"
+            },
+            "ktp_id": {
+                "type": "keyword"
+            },
+            "npwp_id": {
+                "type": "keyword"
+            },
+            "address": {
+                "type": "text"
+            },
+            "province_id": {
+                "type": "keyword"
+            },
+            "province": {
+                "type": "text",
+                "fields": {
+                    "keyword": {
+                        "type": "keyword",
+                        "ignore_above": 256
+                    }
+                }
+            },
+            "province_kd": {
+                "type": "keyword"
+            },
+            "city_id": {
+                "type": "keyword"
+            },
+            "city_kd": {
+                "type": "keyword"
+            },
+            "city": {
+                "type": "text",
+                "fields": {
+                    "keyword": {
+                        "type": "keyword",
+                        "ignore_above": 256
+                    }
+                }
+            },
+            "zone_id": {
+                "type": "keyword"
+            },
+            "zone_kd": {
+                "type": "keyword"
+            },
+            "zone_1": {
+                "type": "text",
+                "fields": {
+                    "keyword": {
+                        "type": "keyword",
+                        "ignore_above": 256
+                    }
+                }
+            },
+            "kelurahan_kd": {
+                "type": "keyword"
+            },
+            "kelurahan": {
+                "type": "text",
+                "fields": {
+                    "keyword": {
+                        "type": "keyword",
+                        "ignore_above": 256
+                    }
+                }
+            },
+            "postcode": {
+                "type": "keyword"
+            },
+            "country": {
+                "type": "keyword"
+            },
+            "lat": {
+                "type": "float"
+            },
+            "lon": {
+                "type": "float"
+            },
+            "lama_pengiriman": {
+                "type": "integer"
+            },
+            "date_register": {
+                "type": "date",
+                "format": "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd||epoch_millis"
+            },
+            "date_approve": {
+                "type": "date",
+                "format": "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd||epoch_millis"
+            },
+            "date_update": {
+                "type": "date",
+                "format": "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd||epoch_millis"
+            },
+            "ip": {
+                "type": "ip"
+            },
+            "user_agent": {
+                "type": "text"
+            },
+            "@timestamp": {
+                "type": "date"
+            }
+        }
+    }
+}

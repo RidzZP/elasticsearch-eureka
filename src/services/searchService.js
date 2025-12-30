@@ -474,7 +474,7 @@ class SearchService {
             const syncSiplah = require("../../scripts/sync-siplah");
 
             // Run the sync siplah function
-            await syncSiplah();
+            await syncSiplah.syncSiplahData();
 
             return {
                 success: true,
@@ -482,6 +482,29 @@ class SearchService {
             };
         } catch (error) {
             console.error("Sync siplah error:", error);
+            return {
+                success: false,
+                error: error.message,
+            };
+        }
+    }
+
+    /**
+     * Run Siplah providers sync
+     */
+    async syncSiplahProviders() {
+        try {
+            const syncSiplah = require("../../scripts/sync-siplah");
+
+            // Run the sync siplah providers function
+            await syncSiplah.syncSiplahProviders();
+
+            return {
+                success: true,
+                message: "Siplah providers sync completed successfully",
+            };
+        } catch (error) {
+            console.error("Sync siplah providers error:", error);
             return {
                 success: false,
                 error: error.message,

@@ -190,6 +190,206 @@ async function buildCategoryHierarchy(categoryId, connection) {
     }
 }
 
+async function syncSiplahProviders() {
+    console.log("🏪 Starting Siplah providers sync...\n");
+
+    let connection;
+    let stopRequested = false;
+
+    try {
+        // Register sync with manager
+        syncManager.startSync("siplah-providers", () => {
+            stopRequested = true;
+            console.log("🛑 Stop signal received for Siplah providers sync");
+        });
+
+        // Connect to MySQL
+        console.log("📡 Connecting to MySQL database...");
+        connection = await mysql.createConnection(DB_CONFIG);
+        console.log("✅ Connected to MySQL\n");
+
+        // Get total count of providers
+        console.log("📊 Counting total providers...");
+        const [countResult] = await connection.execute(`
+            SELECT COUNT(*) as total
+            FROM db_mall m
+            WHERE m.status_approve = 1 AND m.blokir = 0
+        `);
+        const totalProviders = countResult[0].total;
+        console.log(`Found ${totalProviders} providers to sync\n`);
+
+        let totalSynced = 0;
+        let skipped = 0;
+        const BATCH_SIZE = 500; // Process 500 providers at a time
+        let offset = 0;
+
+        // Process providers in batches
+        console.log("📦 Starting providers batch sync...");
+
+        while (offset < totalProviders) {
+            // Check if stop was requested
+            if (stopRequested) {
+                console.log("🛑 Siplah providers sync stopped by user request");
+                break;
+            }
+
+            // Fetch batch of providers
+            const [providers] = await connection.execute(`
+                SELECT
+                    m.mall_id, m.mall_code, m.mall_type, m.image, m.slug,
+                    m.image_header, m.email, m.avatar, m.nama_perusahaan, m.nama_merk,
+                    m.alamat_perusahaan, m.jenis, m.jenis_usaha, m.email_pic, m.nama_pic,
+                    m.jabatan_pic, m.telp_pic, m.ktp_id, m.npwp_id, m.address,
+                    m.province_id, m.province, m.province_kd, m.city_id, m.city_kd,
+                    m.city, m.zone_id, m.zone_kd, m.zone_1, m.kelurahan_kd,
+                    m.kelurahan, m.postcode, m.country, m.lat, m.lon,
+                    m.lama_pengiriman, m.date_register, m.date_approve, m.date_update,
+                    m.ip, m.user_agent,
+                    mt.name as mall_type_name, mt.description as mall_type_description
+                FROM db_mall m
+                LEFT JOIN db_mall_type mt ON m.mall_type = mt.id
+                WHERE m.status_approve = 1 AND m.blokir = 0
+                LIMIT ${BATCH_SIZE} OFFSET ${offset}
+            `);
+
+            if (providers.length === 0) {
+                break; // No more providers
+            }
+
+            const bulkOps = [];
+
+            for (const provider of providers) {
+                // Check if stop was requested
+                if (stopRequested) {
+                    console.log("🛑 Siplah providers sync stopped by user request");
+                    break;
+                }
+
+                // Skip if no mall_id or invalid data
+                if (!provider.mall_id) {
+                    skipped++;
+                    continue;
+                }
+
+                // Prepare mall_type object
+                let mallType = null;
+                if (provider.mall_type) {
+                    mallType = {
+                        id: provider.mall_type.toString(),
+                        name: provider.mall_type_name || null,
+                        description: provider.mall_type_description || null,
+                    };
+                }
+
+                // Prepare document
+                const doc = {
+                    mall_id: provider.mall_id.toString(),
+                    mall_code: provider.mall_code || null,
+                    mall_type: mallType,
+                    image: provider.image || null,
+                    slug: provider.slug || null,
+                    image_header: provider.image_header || null,
+                    email: provider.email || null,
+                    avatar: provider.avatar || null,
+                    nama_perusahaan: provider.nama_perusahaan || null,
+                    nama_merk: provider.nama_merk || null,
+                    alamat_perusahaan: provider.alamat_perusahaan || null,
+                    jenis: provider.jenis || null,
+                    jenis_usaha: provider.jenis_usaha || null,
+                    email_pic: provider.email_pic || null,
+                    nama_pic: provider.nama_pic || null,
+                    jabatan_pic: provider.jabatan_pic || null,
+                    telp_pic: provider.telp_pic || null,
+                    ktp_id: provider.ktp_id || null,
+                    npwp_id: provider.npwp_id || null,
+                    address: provider.address || null,
+                    province_id: provider.province_id
+                        ? provider.province_id.toString()
+                        : null,
+                    province: provider.province || null,
+                    province_kd: provider.province_kd || null,
+                    city_id: provider.city_id ? provider.city_id.toString() : null,
+                    city_kd: provider.city_kd || null,
+                    city: provider.city || null,
+                    zone_id: provider.zone_id ? provider.zone_id.toString() : null,
+                    zone_kd: provider.zone_kd || null,
+                    zone_1: provider.zone_1 || null,
+                    kelurahan_kd: provider.kelurahan_kd || null,
+                    kelurahan: provider.kelurahan || null,
+                    postcode: provider.postcode || null,
+                    country: provider.country || null,
+                    lat: provider.lat ? parseFloat(provider.lat) : null,
+                    lon: provider.lon ? parseFloat(provider.lon) : null,
+                    lama_pengiriman: provider.lama_pengiriman || null,
+                    date_register: provider.date_register || null,
+                    date_approve: provider.date_approve || null,
+                    date_update: provider.date_update || null,
+                    ip: provider.ip || null,
+                    user_agent: provider.user_agent || null,
+                    "@timestamp": new Date(),
+                };
+
+                bulkOps.push(
+                    {
+                        update: {
+                            _index: "siplah-providers",
+                            _id: `provider_${provider.mall_id}`,
+                        },
+                    },
+                    {
+                        doc: doc,
+                        doc_as_upsert: true,
+                    }
+                );
+            }
+
+            // Insert batch to Elasticsearch
+            if (bulkOps.length > 0) {
+                await esClient.bulk({ body: bulkOps });
+                totalSynced += bulkOps.length / 2;
+            }
+
+            // Update progress
+            offset += providers.length;
+            process.stdout.write(
+                `\r   Progress: ${offset}/${totalProviders} (synced: ${totalSynced}, skipped: ${skipped})...`
+            );
+        }
+
+        console.log(
+            `\n✅ Completed! Processed ${totalProviders} providers (synced: ${totalSynced}, skipped: ${skipped})\n`
+        );
+
+        // Refresh providers index
+        console.log("🔄 Refreshing siplah-providers index...");
+        await esClient.indices.refresh({ index: "siplah-providers" });
+        console.log("✅ Providers index refreshed\n");
+
+        // Get providers index stats
+        const stats = await esClient.count({ index: "siplah-providers" });
+        console.log(`📊 Total documents in siplah-providers index: ${stats.count}\n`);
+
+        console.log("✨ Siplah providers sync completed successfully!\n");
+    } catch (error) {
+        if (stopRequested) {
+            console.log("🛑 Siplah providers sync was stopped by user request");
+        } else {
+            console.error("❌ Error syncing siplah providers data:", error);
+        }
+        throw error; // Re-throw to be handled by caller
+    } finally {
+        // Clean up sync manager
+        if (syncManager.isRunning("siplah-providers")) {
+            syncManager.stopSync("siplah-providers");
+        }
+
+        if (connection) {
+            await connection.end();
+            console.log("🔌 Database connection closed");
+        }
+    }
+}
+
 async function syncSiplahData() {
     console.log("🔄 Starting Siplah data sync...\n");
 
@@ -543,4 +743,7 @@ if (require.main === module) {
     syncSiplahData();
 }
 
-module.exports = syncSiplahData;
+module.exports = {
+    syncSiplahData,
+    syncSiplahProviders,
+};

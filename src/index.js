@@ -48,6 +48,7 @@ app.get("/", (req, res) => {
             deleteIndex: `${config.server.apiPrefix}/search/indices/:index (DELETE)`,
             setupIndices: `${config.server.apiPrefix}/search/indices/setup (POST)`,
             syncSiplah: `${config.server.apiPrefix}/search/sync/siplah (POST)`,
+            syncSiplahProviders: `${config.server.apiPrefix}/search/sync/siplah-providers (POST)`,
             syncEurekaBookhouse: `${config.server.apiPrefix}/search/sync/eurekabookhouse (POST)`,
             stopSync: `${config.server.apiPrefix}/search/sync/:syncType/stop (POST)`,
             syncStatus: `${config.server.apiPrefix}/search/sync/status (GET)`,
