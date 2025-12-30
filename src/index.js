@@ -4,6 +4,7 @@ const cors = require("cors");
 const config = require("../config");
 const esClient = require("./utils/elasticsearch");
 const searchRoutes = require("./routes/search");
+const siplahSearchRoutes = require("./routes/siplah/search");
 const { specs, swaggerUi } = require("../config/swagger");
 
 const app = express();
@@ -31,6 +32,7 @@ app.use(
 
 // Routes
 app.use(`${config.server.apiPrefix}/search`, searchRoutes);
+app.use(`${config.server.apiPrefix}/search`, siplahSearchRoutes);
 
 // Root endpoint
 app.get("/", (req, res) => {
@@ -56,6 +58,7 @@ app.get("/", (req, res) => {
             usersAutocomplete: `${config.server.apiPrefix}/search/users/autocomplete?q=query`,
             usersAdvanced: `${config.server.apiPrefix}/search/users/advanced`,
             eurekabookhouseProductsAutocomplete: `${config.server.apiPrefix}/search/eurekabookhouse/products/autocomplete?q=query`,
+            siplahSearch: `${config.server.apiPrefix}/siplah/search?query=&page=1&limit=10`,
         },
     });
 });

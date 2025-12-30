@@ -39,6 +39,10 @@ const options = {
                 name: "Sync",
                 description: "Data synchronization endpoints",
             },
+            {
+                name: "Siplah",
+                description: "Search and autocomplete endpoints",
+            },
         ],
         components: {
             schemas: {
@@ -229,7 +233,7 @@ const options = {
             },
         },
     },
-    apis: ["./src/routes/*.js", "./src/controllers/*.js"],
+    apis: ["./src/routes/**/*.js", "./src/controllers/**/*.js"],
 };
 
 const specs = swaggerJsdoc(options);

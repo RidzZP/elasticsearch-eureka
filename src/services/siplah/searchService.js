@@ -1,0 +1,175 @@
+const esClient = require("../../utils/elasticsearch");
+
+class SiplahSearchService {
+    constructor() {
+        this.client = esClient.getClient();
+        this.index = "siplah";
+    }
+
+    /**
+     * Search products in Siplah index
+     * @param {string} q - Search query
+     * @param {number} page - Page number (default: 1)
+     * @param {number} size - Items per page (default: 10)
+     * @param {string} mallId - Mall ID filter (optional)
+     * @returns {Promise<Object>} Search results with pagination
+     */
+    async searchProducts(q = "", page = 1, size = 10, mallId = null) {
+        try {
+            const from = (page - 1) * size;
+
+            // Build Elasticsearch query with validation filters
+            const searchQuery = {
+                bool: {
+                    must: [
+                        // Search in name and model fields
+                        q
+                            ? {
+                                  multi_match: {
+                                      query: q,
+                                      fields: ["name^2", "model", "description"],
+                                      type: "best_fields",
+                                      operator: "or",
+                                      fuzziness: "AUTO",
+                                  },
+                              }
+                            : { match_all: {} },
+                    ],
+                    filter: [
+                        // id_user_approve != 0
+                        {
+                            range: {
+                                id_user_approve: {
+                                    gt: 0,
+                                },
+                            },
+                        },
+                        // status != 0
+                        {
+                            bool: {
+                                must_not: {
+                                    term: {
+                                        status: "0",
+                                    },
+                                },
+                            },
+                        },
+                        // blokir != 1
+                        {
+                            bool: {
+                                must_not: {
+                                    term: {
+                                        blokir: 1,
+                                    },
+                                },
+                            },
+                        },
+                        // disabled = 'N'
+                        {
+                            term: {
+                                disabled: "N",
+                            },
+                        },
+                        // hapus = 'N'
+                        {
+                            term: {
+                                hapus: "N",
+                            },
+                        },
+                        // mall_id filter (optional)
+                        ...(mallId
+                            ? [
+                                  {
+                                      term: {
+                                          mall_id: mallId,
+                                      },
+                                  },
+                              ]
+                            : []),
+                    ],
+                },
+            };
+
+            // Execute search with specific source fields
+            const response = await this.client.search({
+                index: this.index,
+                body: {
+                    query: searchQuery,
+                    from: from,
+                    size: size,
+                    _source: [
+                        "product_id",
+                        "name",
+                        "model",
+                        "slug",
+                        "image",
+                        "price",
+                        "dpp_price",
+                        "ppn_price",
+                        "dpp_nilai_lain",
+                        "pph_price",
+                        "kondisi",
+                        "date_added",
+                        "ppn_type",
+                        "category",
+                        "categoryChildren",
+                        "grandCategoryChildren",
+                        "categoryLevel",
+                    ],
+                    sort: [{ _score: "desc" }, { date_added: "desc" }],
+                },
+            });
+
+            // Format response
+            const hits = response.hits.hits.map((hit) => ({
+                id: hit._source.product_id,
+                name: hit._source.name,
+                model: hit._source.model,
+                slug: hit._source.slug,
+                image: `https://cdn.eurekabookhouse.co.id/ebh/product/all/${hit._source.image}`,
+                price: hit._source.price,
+                dpp_price: hit._source.dpp_price,
+                ppn_price: hit._source.ppn_price,
+                dpp_nilai_lain: hit._source.dpp_nilai_lain,
+                pph_price: hit._source.pph_price,
+                kondisi: hit._source.kondisi,
+                date_added: hit._source.date_added,
+                ppn_type: hit._source.ppn_type,
+                category: hit._source.category,
+                categoryChildren: hit._source.categoryChildren
+                    ? hit._source.categoryChildren.filter(
+                          (child) => child.isSelected === true
+                      )
+                    : [],
+                grandCategoryChildren: hit._source.grandCategoryChildren
+                    ? hit._source.grandCategoryChildren.filter(
+                          (child) => child.isSelected === true
+                      )
+                    : [],
+                categoryLevel: hit._source.categoryLevel,
+            }));
+
+            const total = response.hits.total.value;
+            const totalPages = Math.ceil(total / size);
+
+            return {
+                data: hits,
+                pagination: {
+                    page: parseInt(page),
+                    size: parseInt(size),
+                    total: total,
+                    totalPages: totalPages,
+                },
+            };
+        } catch (error) {
+            console.error("Error searching Siplah products:", error);
+            throw {
+                success: false,
+                message: "Failed to search products",
+                error: error.message,
+            };
+        }
+    }
+}
+
+module.exports = new SiplahSearchService();
