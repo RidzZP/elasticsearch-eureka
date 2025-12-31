@@ -32,7 +32,7 @@ app.use(
 
 // Routes
 app.use(`${config.server.apiPrefix}/search`, searchRoutes);
-app.use(`${config.server.apiPrefix}/search`, siplahSearchRoutes);
+app.use(`${config.server.apiPrefix}/siplah`, siplahSearchRoutes);
 
 // Root endpoint
 app.get("/", (req, res) => {

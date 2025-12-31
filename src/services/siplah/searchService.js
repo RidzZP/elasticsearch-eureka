@@ -49,7 +49,7 @@ class SiplahSearchService {
                             bool: {
                                 must_not: {
                                     term: {
-                                        status: "0",
+                                        "status.keyword": "0",
                                     },
                                 },
                             },
@@ -67,13 +67,13 @@ class SiplahSearchService {
                         // disabled = 'N'
                         {
                             term: {
-                                disabled: "N",
+                                "disabled.keyword": "N",
                             },
                         },
                         // hapus = 'N'
                         {
                             term: {
-                                hapus: "N",
+                                "hapus.keyword": "N",
                             },
                         },
                         // mall_id filter (optional)

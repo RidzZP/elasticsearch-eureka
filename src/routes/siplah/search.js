@@ -4,7 +4,7 @@ const searchController = require("../../controllers/siplah/searchController");
 
 /**
  * @swagger
- * /api/v1/search/siplah:
+ * /api/v1/siplah/satdik/product:
  *   get:
  *     summary: Search products in Siplah index
  *     description: Search for products in the Siplah Elasticsearch index with optional filters
@@ -47,6 +47,6 @@ const searchController = require("../../controllers/siplah/searchController");
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get("/siplah", searchController.search);
+router.get("/satdik/product", searchController.search);
 
 module.exports = router;
