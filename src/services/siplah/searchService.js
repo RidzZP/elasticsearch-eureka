@@ -173,6 +173,109 @@ class SiplahSearchService {
             };
         }
     }
+
+    /**
+     * Search providers in Siplah-Providers index
+     * @param {string} q - Search query
+     * @param {number} page - Page number (default: 1)
+     * @param {number} size - Items per page (default: 10)
+     * @returns {Promise<Object>} Search results with pagination
+     */
+    async searchProviders(q = "", page = 1, size = 10) {
+        try {
+            const from = (page - 1) * size;
+
+            // Build Elasticsearch query
+            const searchQuery = q
+                ? {
+                      multi_match: {
+                          query: q,
+                          fields: [
+                              "nama_perusahaan^2",
+                              "nama_merk^2",
+                              "mall_code",
+                              "nama_pic",
+                          ],
+                          type: "best_fields",
+                          operator: "or",
+                          fuzziness: "AUTO",
+                      },
+                  }
+                : { match_all: {} };
+
+            // Execute search with specific source fields
+            const response = await this.client.search({
+                index: "siplah-providers",
+                body: {
+                    query: searchQuery,
+                    from: from,
+                    size: size,
+                    _source: [
+                        "mall_id",
+                        "mall_code",
+                        "mall_type",
+                        "nama_perusahaan",
+                        "nama_merk",
+                        "slug",
+                        "image",
+                        "nama_pic",
+                        "jenis",
+                        "jenis_usaha",
+                        "address",
+                        "province",
+                        "city",
+                        "zone_1",
+                        "kelurahan",
+                        "postcode",
+                        "lat",
+                        "lon",
+                    ],
+                    sort: [{ date_register: "desc" }],
+                },
+            });
+
+            // Format response
+            const hits = response.hits.hits.map((hit) => ({
+                id: hit._source.mall_id,
+                code: hit._source.mall_code,
+                type: hit._source.mall_type,
+                name: hit._source.nama_perusahaan || hit._source.nama_merk,
+                slug: hit._source.slug,
+                images: hit._source.image,
+                namaPic: hit._source.nama_pic,
+                jenis: hit._source.jenis,
+                jenisUsaha: hit._source.jenis_usaha,
+                address: hit._source.address,
+                province: hit._source.province,
+                city: hit._source.city,
+                zone: hit._source.zone_1,
+                subdistrict: hit._source.kelurahan,
+                postCode: hit._source.postcode,
+                lat: hit._source.lat,
+                lon: hit._source.lon,
+            }));
+
+            const total = response.hits.total.value;
+            const totalPages = Math.ceil(total / size);
+
+            return {
+                data: hits,
+                pagination: {
+                    page: parseInt(page),
+                    size: parseInt(size),
+                    total: total,
+                    totalPages: totalPages,
+                },
+            };
+        } catch (error) {
+            console.error("Error searching Siplah providers:", error);
+            throw {
+                success: false,
+                message: "Failed to search providers",
+                error: error.message,
+            };
+        }
+    }
 }
 
 module.exports = new SiplahSearchService();
