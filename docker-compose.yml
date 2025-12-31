@@ -43,21 +43,6 @@ services:
             - elastic-network
         restart: unless-stopped
 
-    sync-siplah:
-        image: elastic-eureka
-        container_name: sync-siplah
-        command: node scripts/sync-siplah.js
-        env_file:
-            - .env
-        volumes:
-            - .:/usr/src/app
-        depends_on:
-            elasticsearch:
-                condition: service_started
-        networks:
-            - elastic-network
-        restart: unless-stopped
-
 networks:
     elastic-network:
         driver: bridge
