@@ -491,6 +491,28 @@ class SearchController {
     }
 
     /**
+     * POST /api/v1/search/sync/siplah-providers/stop
+     */
+    async stopSiplahProvidersSync(req, res) {
+        try {
+            const result = await searchService.stopSiplahProvidersSync();
+
+            if (!result.success) {
+                return res.status(400).json(result);
+            }
+
+            return res.json(result);
+        } catch (error) {
+            console.error("Stop sync siplah providers error:", error);
+            return res.status(500).json({
+                success: false,
+                message: "Internal server error",
+                error: error.message,
+            });
+        }
+    }
+
+    /**
      * Run Eureka Bookhouse data sync
      * POST /api/v1/search/sync/eurekabookhouse
      */

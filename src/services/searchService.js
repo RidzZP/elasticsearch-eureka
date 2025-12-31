@@ -513,6 +513,35 @@ class SearchService {
     }
 
     /**
+     * Stop Siplah providers sync
+     */
+    async stopSiplahProvidersSync() {
+        try {
+            const syncManager = require("../utils/syncManager");
+
+            if (!syncManager.isRunning("siplah-providers")) {
+                return {
+                    success: false,
+                    message: "Siplah providers sync is not running",
+                };
+            }
+
+            syncManager.stopSync("siplah-providers");
+
+            return {
+                success: true,
+                message: "Siplah providers sync stopped successfully",
+            };
+        } catch (error) {
+            console.error("Stop siplah providers sync error:", error);
+            return {
+                success: false,
+                error: error.message,
+            };
+        }
+    }
+
+    /**
      * Run Eureka Bookhouse data sync
      */
     async syncEurekaBookhouse() {

@@ -115,6 +115,7 @@ class SiplahSearchService {
                         "categoryChildren",
                         "grandCategoryChildren",
                         "categoryLevel",
+                        "mall",
                     ],
                     sort: [{ _score: "desc" }, { date_added: "desc" }],
                 },
@@ -147,6 +148,8 @@ class SiplahSearchService {
                       )
                     : [],
                 categoryLevel: hit._source.categoryLevel,
+                mall: hit._source.mall,
+                rating: 0.0, // Static rating for now
             }));
 
             const total = response.hits.total.value;

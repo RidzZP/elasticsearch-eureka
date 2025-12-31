@@ -289,6 +289,45 @@ router.post(
 
 /**
  * @swagger
+ * /api/v1/search/sync/siplah-providers/stop:
+ *   post:
+ *     summary: Stop Siplah providers synchronization
+ *     description: Stop the ongoing Siplah providers sync process if it's running.
+ *     tags: [Sync]
+ *     responses:
+ *       200:
+ *         description: Siplah providers sync stopped successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Siplah providers sync stopped successfully"
+ *       400:
+ *         description: Sync is not running
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.post(
+    "/sync/siplah-providers/stop",
+    searchController.stopSiplahProvidersSync.bind(searchController)
+);
+
+/**
+ * @swagger
  * /api/v1/search/sync/eurekabookhouse:
  *   post:
  *     summary: Run Eureka Bookhouse data synchronization

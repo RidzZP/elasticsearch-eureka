@@ -213,7 +213,7 @@ async function syncSiplahProviders() {
         const [countResult] = await connection.execute(`
             SELECT COUNT(*) as total
             FROM db_mall m
-            WHERE m.status_approve = 1 AND m.blokir = 0
+            WHERE m.status_approve = 1 AND m.blokir = 0 AND m.mall_id IS NOT NULL
         `);
         const totalProviders = countResult[0].total;
         console.log(`Found ${totalProviders} providers to sync\n`);
@@ -230,6 +230,9 @@ async function syncSiplahProviders() {
             // Check if stop was requested
             if (stopRequested) {
                 console.log("🛑 Siplah providers sync stopped by user request");
+                console.log(
+                    `📊 Progress at stop: ${offset}/${totalProviders} processed, ${totalSynced} synced, ${skipped} skipped`
+                );
                 break;
             }
 
@@ -248,7 +251,7 @@ async function syncSiplahProviders() {
                     mt.name as mall_type_name, mt.description as mall_type_description
                 FROM db_mall m
                 LEFT JOIN db_mall_type mt ON m.mall_type = mt.id
-                WHERE m.status_approve = 1 AND m.blokir = 0
+                WHERE m.status_approve = 1 AND m.blokir = 0 AND m.mall_id IS NOT NULL
                 LIMIT ${BATCH_SIZE} OFFSET ${offset}
             `);
 
@@ -262,6 +265,9 @@ async function syncSiplahProviders() {
                 // Check if stop was requested
                 if (stopRequested) {
                     console.log("🛑 Siplah providers sync stopped by user request");
+                    console.log(
+                        `📊 Progress at stop: ${offset}/${totalProviders} processed, ${totalSynced} synced, ${skipped} skipped`
+                    );
                     break;
                 }
 
@@ -318,8 +324,16 @@ async function syncSiplahProviders() {
                     kelurahan: provider.kelurahan || null,
                     postcode: provider.postcode || null,
                     country: provider.country || null,
-                    lat: provider.lat ? parseFloat(provider.lat) : null,
-                    lon: provider.lon ? parseFloat(provider.lon) : null,
+                    lat: provider.lat
+                        ? isNaN(parseFloat(provider.lat))
+                            ? null
+                            : parseFloat(provider.lat)
+                        : null,
+                    lon: provider.lon
+                        ? isNaN(parseFloat(provider.lon))
+                            ? null
+                            : parseFloat(provider.lon)
+                        : null,
                     lama_pengiriman: provider.lama_pengiriman || null,
                     date_register: provider.date_register || null,
                     date_approve: provider.date_approve || null,
@@ -345,8 +359,33 @@ async function syncSiplahProviders() {
 
             // Insert batch to Elasticsearch
             if (bulkOps.length > 0) {
-                await esClient.bulk({ body: bulkOps });
-                totalSynced += bulkOps.length / 2;
+                try {
+                    const bulkResponse = await esClient.bulk({ body: bulkOps });
+                    if (bulkResponse.errors) {
+                        const failedItems = bulkResponse.items.filter(
+                            (item) => item.update && item.update.error
+                        );
+                        console.error(
+                            `❌ Bulk errors in batch starting at offset ${offset}: ${failedItems.length} failed items`
+                        );
+                        failedItems.forEach((item, index) => {
+                            console.error(
+                                `  Item ${index + 1}: ID ${
+                                    item.update._id
+                                }, Error: ${JSON.stringify(item.update.error)}`
+                            );
+                        });
+                    }
+                    totalSynced += bulkOps.length / 2;
+                } catch (bulkError) {
+                    console.error(
+                        `❌ Bulk insert failed for batch at offset ${offset}:`,
+                        bulkError
+                    );
+                    // Continue to next batch instead of stopping the entire sync
+                    // You can choose to skip or re-throw based on needs
+                    // For debugging, let's continue
+                }
             }
 
             // Update progress
@@ -373,6 +412,9 @@ async function syncSiplahProviders() {
     } catch (error) {
         if (stopRequested) {
             console.log("🛑 Siplah providers sync was stopped by user request");
+            console.log(
+                `📊 Final progress: ${offset}/${totalProviders} processed, ${totalSynced} synced, ${skipped} skipped`
+            );
         } else {
             console.error("❌ Error syncing siplah providers data:", error);
         }
