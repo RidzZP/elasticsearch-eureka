@@ -409,6 +409,9 @@ async function syncSiplahProviders() {
         console.log(`📊 Total documents in siplah-providers index: ${stats.count}\n`);
 
         console.log("✨ Siplah providers sync completed successfully!\n");
+
+        // Mark sync as completed
+        syncManager.completeSync("siplah-providers");
     } catch (error) {
         if (stopRequested) {
             console.log("🛑 Siplah providers sync was stopped by user request");
@@ -420,7 +423,7 @@ async function syncSiplahProviders() {
         }
         throw error; // Re-throw to be handled by caller
     } finally {
-        // Clean up sync manager
+        // Clean up sync manager only if still running (not already completed)
         if (syncManager.isRunning("siplah-providers")) {
             syncManager.stopSync("siplah-providers");
         }
@@ -764,6 +767,9 @@ async function syncSiplahData() {
         console.log(`📊 Total documents in siplah index: ${stats.count}\n`);
 
         console.log("\n✨ Siplah sync completed successfully!\n");
+
+        // Mark sync as completed
+        syncManager.completeSync("siplah");
     } catch (error) {
         if (stopRequested) {
             console.log("🛑 Siplah sync was stopped by user request");
@@ -772,7 +778,7 @@ async function syncSiplahData() {
         }
         throw error; // Re-throw to be handled by caller
     } finally {
-        // Clean up sync manager
+        // Clean up sync manager only if still running (not already completed)
         if (syncManager.isRunning("siplah")) {
             syncManager.stopSync("siplah");
         }

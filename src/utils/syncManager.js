@@ -9,7 +9,10 @@ class SyncManager {
      * @param {Function} stopCallback - Callback function to stop the sync
      */
     startSync(syncType, stopCallback) {
-        if (this.runningSyncs.has(syncType)) {
+        const existingSync = this.runningSyncs.get(syncType);
+
+        // Check if sync is already running (not just exists in map)
+        if (existingSync && existingSync.status === "running") {
             throw new Error(`Sync ${syncType} is already running`);
         }
 
@@ -29,8 +32,8 @@ class SyncManager {
     stopSync(syncType) {
         const syncInfo = this.runningSyncs.get(syncType);
 
-        if (!syncInfo) {
-            throw new Error(`Sync ${syncType} is not running`);
+        if (!syncInfo || syncInfo.status !== "running") {
+            throw new Error(`Sync ${syncType} is not currently running`);
         }
 
         if (syncInfo.stopCallback) {
@@ -41,7 +44,32 @@ class SyncManager {
         syncInfo.stoppedAt = new Date();
 
         console.log(`🛑 Stopped sync: ${syncType}`);
+
+        // Remove from map after a short delay to allow for status checks
+        setTimeout(() => {
+            this.runningSyncs.delete(syncType);
+        }, 5000); // 5 seconds
+
         return true;
+    }
+
+    /**
+     * Complete a sync operation (called when sync finishes normally)
+     * @param {string} syncType - Type of sync that completed
+     */
+    completeSync(syncType) {
+        const syncInfo = this.runningSyncs.get(syncType);
+
+        if (syncInfo) {
+            syncInfo.status = "completed";
+            syncInfo.completedAt = new Date();
+            console.log(`✅ Completed sync: ${syncType}`);
+
+            // Remove from map after a short delay
+            setTimeout(() => {
+                this.runningSyncs.delete(syncType);
+            }, 5000); // 5 seconds
+        }
     }
 
     /**

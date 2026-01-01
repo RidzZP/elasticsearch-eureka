@@ -179,6 +179,9 @@ async function syncData() {
         );
 
         console.log("\n✨ Eureka Bookhouse sync completed successfully!\n");
+
+        // Mark sync as completed
+        syncManager.completeSync("eurekabookhouse");
     } catch (error) {
         if (stopRequested) {
             console.log("🛑 Eureka Bookhouse sync was stopped by user request");
@@ -194,7 +197,7 @@ async function syncData() {
         }
         throw error; // Re-throw to be handled by caller
     } finally {
-        // Clean up sync manager
+        // Clean up sync manager only if still running (not already completed)
         if (syncManager.isRunning("eurekabookhouse")) {
             syncManager.stopSync("eurekabookhouse");
         }
