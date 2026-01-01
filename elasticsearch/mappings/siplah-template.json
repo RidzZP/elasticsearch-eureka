@@ -267,6 +267,18 @@
             "description": {
                 "type": "text"
             },
+            "meta_description": {
+                "type": "text"
+            },
+            "meta_keyword": {
+                "type": "text"
+            },
+            "tag": {
+                "type": "text"
+            },
+            "seo": {
+                "type": "keyword"
+            },
             "manufacturer": {
                 "type": "object",
                 "properties": {

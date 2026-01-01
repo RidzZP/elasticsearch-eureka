@@ -116,6 +116,10 @@ class SiplahSearchService {
                         "grandCategoryChildren",
                         "categoryLevel",
                         "mall",
+                        "meta_description",
+                        "meta_keyword",
+                        "tag",
+                        "seo",
                     ],
                     sort: [{ _score: "desc" }, { date_added: "desc" }],
                 },
@@ -149,6 +153,10 @@ class SiplahSearchService {
                     : [],
                 categoryLevel: hit._source.categoryLevel,
                 mall: hit._source.mall,
+                meta_description: hit._source.meta_description,
+                meta_keyword: hit._source.meta_keyword,
+                tag: hit._source.tag,
+                seo: hit._source.seo,
                 rating: 0.0, // Static rating for now
             }));
 
