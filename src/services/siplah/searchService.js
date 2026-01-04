@@ -177,19 +177,24 @@ class SiplahSearchService {
                                   {
                                       bool: {
                                           should: [
-                                              // Search in parent category
-                                              { term: { "category.value": categoryId } },
+                                              // Search in parent category (keyword type)
+                                              {
+                                                  term: {
+                                                      "category.value.keyword":
+                                                          categoryId,
+                                                  },
+                                              },
                                               // Search in categoryChildren (object array - flattened)
                                               {
                                                   term: {
-                                                      "categoryChildren.value":
+                                                      "categoryChildren.value.keyword":
                                                           categoryId,
                                                   },
                                               },
                                               // Search in grandCategoryChildren (object array - flattened)
                                               {
                                                   term: {
-                                                      "grandCategoryChildren.value":
+                                                      "grandCategoryChildren.value.keyword":
                                                           categoryId,
                                                   },
                                               },
