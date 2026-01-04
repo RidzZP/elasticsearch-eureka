@@ -171,35 +171,26 @@ class SiplahSearchService {
                               ]
                             : []),
                         // category filter (optional) - search in category hierarchy
+                        // Note: categoryChildren and grandCategoryChildren are stored as object arrays (not nested)
                         ...(categoryId
                             ? [
                                   {
                                       bool: {
                                           should: [
-                                              // Search in parent category (object type)
+                                              // Search in parent category
                                               { term: { "category.value": categoryId } },
-                                              // Search in categoryChildren (nested type)
+                                              // Search in categoryChildren (object array - flattened)
                                               {
-                                                  nested: {
-                                                      path: "categoryChildren",
-                                                      query: {
-                                                          term: {
-                                                              "categoryChildren.value":
-                                                                  categoryId,
-                                                          },
-                                                      },
+                                                  term: {
+                                                      "categoryChildren.value":
+                                                          categoryId,
                                                   },
                                               },
-                                              // Search in grandCategoryChildren (nested type)
+                                              // Search in grandCategoryChildren (object array - flattened)
                                               {
-                                                  nested: {
-                                                      path: "grandCategoryChildren",
-                                                      query: {
-                                                          term: {
-                                                              "grandCategoryChildren.value":
-                                                                  categoryId,
-                                                          },
-                                                      },
+                                                  term: {
+                                                      "grandCategoryChildren.value":
+                                                          categoryId,
                                                   },
                                               },
                                           ],
