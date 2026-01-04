@@ -11,12 +11,52 @@ class SiplahSearchService {
      * @param {string} q - Search query
      * @param {number} page - Page number (default: 1)
      * @param {number} size - Items per page (default: 10)
-     * @param {string} mallId - Mall ID filter (optional)
+     * @param {Object} filters - Optional filters
+     * @param {string} filters.mallId - Mall ID filter
+     * @param {number} filters.minPrice - Minimum price filter
+     * @param {number} filters.maxPrice - Maximum price filter
+     * @param {number} filters.minRating - Minimum rating filter
+     * @param {number} filters.maxRating - Maximum rating filter
+     * @param {string} filters.manufacturerId - Manufacturer ID filter
+     * @param {string} filters.province - Province filter
+     * @param {string} filters.availability - Availability filter
+     * @param {string} filters.produksi - Produksi filter
+     * @param {string} filters.categoryId - Category ID filter
      * @returns {Promise<Object>} Search results with pagination
      */
-    async searchProducts(q = "", page = 1, size = 10, mallId = null) {
+    async searchProducts(q = "", page = 1, size = 10, filters = {}) {
         try {
             const from = (page - 1) * size;
+            const {
+                mallId,
+                minPrice,
+                maxPrice,
+                minRating,
+                maxRating,
+                manufacturerId,
+                province,
+                availability,
+                produksi,
+                categoryId,
+            } = filters;
+
+            // Build price range filter
+            const priceFilter = [];
+            if (minPrice !== undefined || maxPrice !== undefined) {
+                const priceRange = { range: { price: {} } };
+                if (minPrice !== undefined) priceRange.range.price.gte = minPrice;
+                if (maxPrice !== undefined) priceRange.range.price.lte = maxPrice;
+                priceFilter.push(priceRange);
+            }
+
+            // Build rating range filter
+            const ratingFilter = [];
+            if (minRating !== undefined || maxRating !== undefined) {
+                const ratingRange = { range: { rating: {} } };
+                if (minRating !== undefined) ratingRange.range.rating.gte = minRating;
+                if (maxRating !== undefined) ratingRange.range.rating.lte = maxRating;
+                ratingFilter.push(ratingRange);
+            }
 
             // Build Elasticsearch query with validation filters
             const searchQuery = {
@@ -82,6 +122,85 @@ class SiplahSearchService {
                                   {
                                       term: {
                                           mall_id: mallId,
+                                      },
+                                  },
+                              ]
+                            : []),
+                        // price range filter
+                        ...priceFilter,
+                        // rating range filter
+                        ...ratingFilter,
+                        // manufacturer_id filter (optional)
+                        ...(manufacturerId
+                            ? [
+                                  {
+                                      term: {
+                                          manufacturer_id: manufacturerId,
+                                      },
+                                  },
+                              ]
+                            : []),
+                        // province filter (optional) - search in mall.province or location
+                        ...(province
+                            ? [
+                                  {
+                                      match: {
+                                          location: province,
+                                      },
+                                  },
+                              ]
+                            : []),
+                        // availability filter (optional)
+                        ...(availability
+                            ? [
+                                  {
+                                      term: {
+                                          "availability.keyword": availability,
+                                      },
+                                  },
+                              ]
+                            : []),
+                        // produksi filter (optional)
+                        ...(produksi
+                            ? [
+                                  {
+                                      term: {
+                                          "produksi.keyword": produksi,
+                                      },
+                                  },
+                              ]
+                            : []),
+                        // category filter (optional) - nested query for category
+                        ...(categoryId
+                            ? [
+                                  {
+                                      bool: {
+                                          should: [
+                                              { term: { "category.value": categoryId } },
+                                              {
+                                                  nested: {
+                                                      path: "categoryChildren",
+                                                      query: {
+                                                          term: {
+                                                              "categoryChildren.value":
+                                                                  categoryId,
+                                                          },
+                                                      },
+                                                  },
+                                              },
+                                              {
+                                                  nested: {
+                                                      path: "grandCategoryChildren",
+                                                      query: {
+                                                          term: {
+                                                              "grandCategoryChildren.value":
+                                                                  categoryId,
+                                                          },
+                                                      },
+                                                  },
+                                              },
+                                          ],
+                                          minimum_should_match: 1,
                                       },
                                   },
                               ]

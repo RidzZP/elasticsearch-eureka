@@ -33,6 +33,59 @@ const searchController = require("../../controllers/siplah/searchController");
  *         schema:
  *           type: string
  *         description: Mall ID filter (optional)
+ *       - in: query
+ *         name: min_price
+ *         schema:
+ *           type: number
+ *           format: float
+ *         description: Minimum price filter (optional)
+ *       - in: query
+ *         name: max_price
+ *         schema:
+ *           type: number
+ *           format: float
+ *         description: Maximum price filter (optional)
+ *       - in: query
+ *         name: min_rating
+ *         schema:
+ *           type: number
+ *           format: float
+ *           minimum: 0
+ *           maximum: 5
+ *         description: Minimum rating filter (optional, 0-5)
+ *       - in: query
+ *         name: max_rating
+ *         schema:
+ *           type: number
+ *           format: float
+ *           minimum: 0
+ *           maximum: 5
+ *         description: Maximum rating filter (optional, 0-5)
+ *       - in: query
+ *         name: manufacturer_id
+ *         schema:
+ *           type: string
+ *         description: Manufacturer ID filter (optional)
+ *       - in: query
+ *         name: province
+ *         schema:
+ *           type: string
+ *         description: Province/location filter (optional)
+ *       - in: query
+ *         name: availability
+ *         schema:
+ *           type: string
+ *         description: Product availability filter (optional)
+ *       - in: query
+ *         name: produksi
+ *         schema:
+ *           type: string
+ *         description: Production type filter - e.g., 'lokal' or 'impor' (optional)
+ *       - in: query
+ *         name: category_id
+ *         schema:
+ *           type: string
+ *         description: Category ID filter - searches in parent, child, and grandchild categories (optional)
  *     responses:
  *       200:
  *         description: Search results retrieved successfully
