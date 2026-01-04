@@ -170,7 +170,7 @@ class SiplahSearchService {
                                   },
                               ]
                             : []),
-                        // category filter (optional) - nested query for category
+                        // category filter (optional) - search in category hierarchy
                         ...(categoryId
                             ? [
                                   {
@@ -178,25 +178,15 @@ class SiplahSearchService {
                                           should: [
                                               { term: { "category.value": categoryId } },
                                               {
-                                                  nested: {
-                                                      path: "categoryChildren",
-                                                      query: {
-                                                          term: {
-                                                              "categoryChildren.value":
-                                                                  categoryId,
-                                                          },
-                                                      },
+                                                  term: {
+                                                      "categoryChildren.value":
+                                                          categoryId,
                                                   },
                                               },
                                               {
-                                                  nested: {
-                                                      path: "grandCategoryChildren",
-                                                      query: {
-                                                          term: {
-                                                              "grandCategoryChildren.value":
-                                                                  categoryId,
-                                                          },
-                                                      },
+                                                  term: {
+                                                      "grandCategoryChildren.value":
+                                                          categoryId,
                                                   },
                                               },
                                           ],
