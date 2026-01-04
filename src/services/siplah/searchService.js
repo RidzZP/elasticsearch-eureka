@@ -176,17 +176,30 @@ class SiplahSearchService {
                                   {
                                       bool: {
                                           should: [
+                                              // Search in parent category (object type)
                                               { term: { "category.value": categoryId } },
+                                              // Search in categoryChildren (nested type)
                                               {
-                                                  term: {
-                                                      "categoryChildren.value":
-                                                          categoryId,
+                                                  nested: {
+                                                      path: "categoryChildren",
+                                                      query: {
+                                                          term: {
+                                                              "categoryChildren.value":
+                                                                  categoryId,
+                                                          },
+                                                      },
                                                   },
                                               },
+                                              // Search in grandCategoryChildren (nested type)
                                               {
-                                                  term: {
-                                                      "grandCategoryChildren.value":
-                                                          categoryId,
+                                                  nested: {
+                                                      path: "grandCategoryChildren",
+                                                      query: {
+                                                          term: {
+                                                              "grandCategoryChildren.value":
+                                                                  categoryId,
+                                                          },
+                                                      },
                                                   },
                                               },
                                           ],
