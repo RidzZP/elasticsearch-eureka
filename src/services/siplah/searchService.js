@@ -62,15 +62,14 @@ class SiplahSearchService {
             const searchQuery = {
                 bool: {
                     must: [
-                        // Search in name and model fields
+                        // Search in name and mall name fields only
                         q
                             ? {
                                   multi_match: {
                                       query: q,
-                                      fields: ["name^2", "model", "description"],
+                                      fields: ["name^2", "mall.name^1.5"],
                                       type: "best_fields",
                                       operator: "or",
-                                      fuzziness: "AUTO",
                                   },
                               }
                             : { match_all: {} },
@@ -172,29 +171,25 @@ class SiplahSearchService {
                             : []),
                         // category filter (optional) - search in category hierarchy
                         // Note: categoryChildren and grandCategoryChildren are stored as object arrays (not nested)
+                        // category.value, categoryChildren.value, grandCategoryChildren.value are keyword type
                         ...(categoryId
                             ? [
                                   {
                                       bool: {
                                           should: [
-                                              // Search in parent category (keyword type)
-                                              {
-                                                  term: {
-                                                      "category.value.keyword":
-                                                          categoryId,
-                                                  },
-                                              },
+                                              // Search in parent category
+                                              { term: { "category.value": categoryId } },
                                               // Search in categoryChildren (object array - flattened)
                                               {
                                                   term: {
-                                                      "categoryChildren.value.keyword":
+                                                      "categoryChildren.value":
                                                           categoryId,
                                                   },
                                               },
                                               // Search in grandCategoryChildren (object array - flattened)
                                               {
                                                   term: {
-                                                      "grandCategoryChildren.value.keyword":
+                                                      "grandCategoryChildren.value":
                                                           categoryId,
                                                   },
                                               },
@@ -314,17 +309,11 @@ class SiplahSearchService {
             // Build Elasticsearch query
             const searchQuery = q
                 ? {
-                      multi_match: {
-                          query: q,
-                          fields: [
-                              "nama_perusahaan^2",
-                              "nama_merk^2",
-                              "mall_code",
-                              "nama_pic",
-                          ],
-                          type: "best_fields",
-                          operator: "or",
-                          fuzziness: "AUTO",
+                      match: {
+                          nama_perusahaan: {
+                              query: q,
+                              operator: "or",
+                          },
                       },
                   }
                 : { match_all: {} };
@@ -356,7 +345,7 @@ class SiplahSearchService {
                         "lat",
                         "lon",
                     ],
-                    sort: [{ date_register: "desc" }],
+                    sort: [{ _score: "desc" }, { date_register: "desc" }],
                 },
             });
 
