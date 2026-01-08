@@ -3,11 +3,11 @@ const { Client } = require("@elastic/elasticsearch");
 const syncManager = require("../src/utils/syncManager");
 
 const DB_CONFIG = {
-    host: process.env.DB_HOST || "34.50.96.60",
+    host: "34.50.96.60",
     port: 3306,
-    user: process.env.DB_USER || "root",
-    password: process.env.DB_PASS || "SipLah@2024",
-    database: process.env.DB_NAME || "tb_2019",
+    user: "root",
+    password: "SipLah@2024",
+    database: "tb_2019",
     connectTimeout: 30000,
 };
 
