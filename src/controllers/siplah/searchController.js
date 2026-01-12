@@ -22,7 +22,7 @@ class SiplahSearchController {
                 province,
                 availability,
                 produksi,
-                category_id,
+                category,
             } = req.query;
 
             // Validate pagination parameters
@@ -41,7 +41,7 @@ class SiplahSearchController {
                 province: province || undefined,
                 availability: availability || undefined,
                 produksi: produksi || undefined,
-                categoryId: category_id || undefined,
+                category: category || undefined,
             };
 
             // Execute search

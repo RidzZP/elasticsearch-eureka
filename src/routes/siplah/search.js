@@ -82,10 +82,10 @@ const searchController = require("../../controllers/siplah/searchController");
  *           type: string
  *         description: Production type filter - e.g., 'lokal' or 'impor' (optional)
  *       - in: query
- *         name: category_id
+ *         name: category
  *         schema:
  *           type: string
- *         description: Category ID filter - searches in parent, child, and grandchild categories (optional)
+ *         description: Category slug filter - searches in parent, child, and grandchild categories (optional)
  *     responses:
  *       200:
  *         description: Search results retrieved successfully

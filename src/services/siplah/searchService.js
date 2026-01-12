@@ -21,7 +21,7 @@ class SiplahSearchService {
      * @param {string} filters.province - Province filter
      * @param {string} filters.availability - Availability filter
      * @param {string} filters.produksi - Produksi filter
-     * @param {string} filters.categoryId - Category ID filter
+     * @param {string} filters.category - Category slug filter
      * @returns {Promise<Object>} Search results with pagination
      */
     async searchProducts(q = "", page = 1, size = 10, filters = {}) {
@@ -37,7 +37,7 @@ class SiplahSearchService {
                 province,
                 availability,
                 produksi,
-                categoryId,
+                category,
             } = filters;
 
             // Build price range filter
@@ -170,27 +170,31 @@ class SiplahSearchService {
                               ]
                             : []),
                         // category filter (optional) - search in category hierarchy
-                        // Note: categoryChildren and grandCategoryChildren are stored as object arrays (not nested)
-                        // category.value, categoryChildren.value, grandCategoryChildren.value are keyword type
-                        ...(categoryId
+                        // Note: current index has categoryChildren and grandCategoryChildren as object type (not nested)
+                        // Because of object type limitation, we filter by slug only and post-filter by isSelected in app
+                        ...(category
                             ? [
                                   {
                                       bool: {
                                           should: [
                                               // Search in parent category
-                                              { term: { "category.value": categoryId } },
-                                              // Search in categoryChildren (object array - flattened)
                                               {
                                                   term: {
-                                                      "categoryChildren.value":
-                                                          categoryId,
+                                                      "category.slug.keyword": category,
                                                   },
                                               },
-                                              // Search in grandCategoryChildren (object array - flattened)
+                                              // Search in categoryChildren by slug only
                                               {
                                                   term: {
-                                                      "grandCategoryChildren.value":
-                                                          categoryId,
+                                                      "categoryChildren.slug.keyword":
+                                                          category,
+                                                  },
+                                              },
+                                              // Search in grandCategoryChildren by slug only
+                                              {
+                                                  term: {
+                                                      "grandCategoryChildren.slug.keyword":
+                                                          category,
                                                   },
                                               },
                                           ],
@@ -239,7 +243,7 @@ class SiplahSearchService {
             });
 
             // Format response
-            const hits = response.hits.hits.map((hit) => ({
+            let hits = response.hits.hits.map((hit) => ({
                 id: hit._source.product_id,
                 name: hit._source.name,
                 model: hit._source.model,
@@ -273,7 +277,38 @@ class SiplahSearchService {
                 rating: 0.0, // Static rating for now
             }));
 
-            const total = response.hits.total.value;
+            // Post-filter: if category filter is applied, ensure the category slug matches AND isSelected=true
+            if (category) {
+                hits = hits.filter((hit) => {
+                    // Check if parent category matches
+                    if (hit.category && hit.category.slug === category) {
+                        return true;
+                    }
+                    // Check if any selected categoryChildren matches
+                    if (
+                        hit.categoryChildren &&
+                        hit.categoryChildren.some(
+                            (child) =>
+                                child.slug === category && child.isSelected === true
+                        )
+                    ) {
+                        return true;
+                    }
+                    // Check if any selected grandCategoryChildren matches
+                    if (
+                        hit.grandCategoryChildren &&
+                        hit.grandCategoryChildren.some(
+                            (child) =>
+                                child.slug === category && child.isSelected === true
+                        )
+                    ) {
+                        return true;
+                    }
+                    return false;
+                });
+            }
+
+            const total = hits.length; // Use filtered count
             const totalPages = Math.ceil(total / size);
 
             return {
